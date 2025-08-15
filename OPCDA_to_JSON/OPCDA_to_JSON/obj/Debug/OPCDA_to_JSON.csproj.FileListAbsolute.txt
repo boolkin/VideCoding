@@ -1,0 +1,12 @@
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.csproj.AssemblyReference.cache
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCWinFormsClient.Form1.resources
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.Properties.Resources.resources
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.csproj.GenerateResource.cache
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.csproj.CoreCompileInputs.cache
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\bin\Debug\OPCDA_to_JSON.exe.config
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\bin\Debug\OPCDA_to_JSON.exe
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\bin\Debug\OPCDA_to_JSON.pdb
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\bin\Debug\OPCdotNETLib.dll
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.csproj.CopyComplete
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.exe
+C:\Users\User\Source\Repos\OPCDA_to_JSON\OPCDA_to_JSON\obj\Debug\OPCDA_to_JSON.pdb
