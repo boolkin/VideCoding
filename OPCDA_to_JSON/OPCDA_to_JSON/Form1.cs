@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.IO;
 using System.Xml;
+using System.Threading.Tasks;
 using OPC.Common;
 using OPC.Data;
 using OPC.Data.Interface;
@@ -23,6 +24,7 @@ namespace OPCWinFormsClient
         private string _loadedConfigPath = ""; // Путь к загруженному файлу конфигурации
         private bool _isUpdatingCoefficients = false; // Флаг для предотвращения рекурсии
         private XmlDocument _configDoc; // Для работы с конфигурацией
+        private Timer _serverListTimer; // Таймер для отложенной загрузки серверов
 
         // Класс для хранения информации о теге
         public class TagInfo
@@ -70,8 +72,19 @@ namespace OPCWinFormsClient
             try
             {
                 _serversList = new OpcServerList();
-                LoadAvailableServers();
+                _availableServers = new List<OpcServers>();
+
+                // Создаем таймер для отложенной загрузки серверов (через 2 секунды)
+                _serverListTimer = new Timer();
+                _serverListTimer.Interval = 2000; // 2 секунды
+                _serverListTimer.Tick += (sender, e) => {
+                    _serverListTimer.Stop();
+                    LoadAvailableServers();
+                };
+                _serverListTimer.Start();
+
                 CreateDefaultConfiguration(); // Создаем дефолтную конфигурацию
+                UpdateStatus("Инициализация... Серверы будут загружены через 2 секунды");
             }
             catch (Exception ex)
             {
@@ -80,15 +93,25 @@ namespace OPCWinFormsClient
             }
         }
 
-        private void LoadAvailableServers()
+        private async void LoadAvailableServers()
         {
             try
             {
-                OpcServers[] serversArray;
-                _serversList.ListAllData20(out serversArray);
+                // Показываем, что идет загрузка
+                listBoxServers.Items.Clear();
+                listBoxServers.Items.Add("Загрузка серверов...");
+                btnRefreshServers.Enabled = false;
+                Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
 
-                _availableServers = new List<OpcServers>(serversArray);
+                // Асинхронная загрузка серверов
+                await Task.Run(() => {
+                    OpcServers[] serversArray;
+                    _serversList.ListAllData20(out serversArray);
+                    _availableServers = new List<OpcServers>(serversArray);
+                });
 
+                // Обновляем UI в основном потоке
                 listBoxServers.Items.Clear();
                 cmbOpcId.Items.Clear();
                 foreach (var server in _availableServers)
@@ -102,20 +125,28 @@ namespace OPCWinFormsClient
             }
             catch (Exception ex)
             {
+                listBoxServers.Items.Clear();
+                listBoxServers.Items.Add("Ошибка загрузки серверов");
                 MessageBox.Show($"Ошибка загрузки серверов: {ex.Message}", "Ошибка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateStatus("Ошибка загрузки серверов");
+            }
+            finally
+            {
+                btnRefreshServers.Enabled = true;
+                Cursor = Cursors.Default;
             }
         }
 
         private void listBoxServers_DoubleClick(object sender, EventArgs e)
         {
-            if (listBoxServers.SelectedIndex >= 0)
+            if (listBoxServers.SelectedIndex >= 0 && _availableServers != null && _availableServers.Count > 0)
             {
                 LoadServerTags(listBoxServers.SelectedIndex);
             }
         }
 
-        private void LoadServerTags(int serverIndex)
+        private async void LoadServerTags(int serverIndex)
         {
             try
             {
@@ -136,7 +167,11 @@ namespace OPCWinFormsClient
 
                 _currentServer = new OpcServer();
                 string serverProgID = _availableServers[serverIndex].ProgID;
-                _currentServer.Connect(serverProgID);
+
+                // Асинхронное подключение
+                await Task.Run(() => {
+                    _currentServer.Connect(serverProgID);
+                });
 
                 ArrayList tagList = new ArrayList();
                 _currentServer.Browse(OPCBROWSETYPE.OPC_FLAT, out tagList);
@@ -546,8 +581,12 @@ namespace OPCWinFormsClient
 
         private void btnRefreshServers_Click(object sender, EventArgs e)
         {
+            // Останавливаем таймер, если он запущен
+            if (_serverListTimer != null && _serverListTimer.Enabled)
+            {
+                _serverListTimer.Stop();
+            }
             LoadAvailableServers();
-            UpdateStatus("Серверы обновлены");
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
@@ -937,6 +976,26 @@ namespace OPCWinFormsClient
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            // Останавливаем таймер
+            if (_serverListTimer != null)
+            {
+                _serverListTimer.Stop();
+                _serverListTimer.Dispose();
+            }
+
+            // Отключаемся от OPC сервера
+            if (_currentServer != null)
+            {
+                try
+                {
+                    _currentServer.Disconnect();
+                }
+                catch
+                {
+                    // Игнорируем ошибки при отключении
+                }
+            }
+
             // Сохраняем конфигурацию перед закрытием
             SaveFormToConfig();
             base.OnFormClosing(e);

@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -163,7 +162,7 @@
             this.splitContainerMain.Panel2.Controls.Add(this.panelButtons);
             this.splitContainerMain.Panel2.Controls.Add(this.panelRight);
             this.splitContainerMain.Size = new System.Drawing.Size(970, 387);
-            this.splitContainerMain.SplitterDistance = 479;
+            this.splitContainerMain.SplitterDistance = 480;
             this.splitContainerMain.TabIndex = 6;
             // 
             // panelMiddle
@@ -175,7 +174,7 @@
             this.panelMiddle.Location = new System.Drawing.Point(0, 0);
             this.panelMiddle.Margin = new System.Windows.Forms.Padding(2);
             this.panelMiddle.Name = "panelMiddle";
-            this.panelMiddle.Size = new System.Drawing.Size(479, 387);
+            this.panelMiddle.Size = new System.Drawing.Size(480, 387);
             this.panelMiddle.TabIndex = 2;
             // 
             // label2
@@ -190,19 +189,19 @@
             // 
             // txtSearch
             // 
-            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtSearch.Location = new System.Drawing.Point(12, 7);
             this.txtSearch.Margin = new System.Windows.Forms.Padding(2);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(459, 20);
+            this.txtSearch.Size = new System.Drawing.Size(460, 20);
             this.txtSearch.TabIndex = 1;
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
             // 
             // listBoxAvailableTags
             // 
-            this.listBoxAvailableTags.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.listBoxAvailableTags.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listBoxAvailableTags.FormattingEnabled = true;
             this.listBoxAvailableTags.HorizontalScrollbar = true;
@@ -210,7 +209,7 @@
             this.listBoxAvailableTags.Margin = new System.Windows.Forms.Padding(2);
             this.listBoxAvailableTags.Name = "listBoxAvailableTags";
             this.listBoxAvailableTags.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.listBoxAvailableTags.Size = new System.Drawing.Size(462, 329);
+            this.listBoxAvailableTags.Size = new System.Drawing.Size(463, 329);
             this.listBoxAvailableTags.TabIndex = 0;
             this.listBoxAvailableTags.DoubleClick += new System.EventHandler(this.listBoxAvailableTags_DoubleClick);
             // 
@@ -284,12 +283,12 @@
             this.panelRight.Location = new System.Drawing.Point(0, 0);
             this.panelRight.Margin = new System.Windows.Forms.Padding(2);
             this.panelRight.Name = "panelRight";
-            this.panelRight.Size = new System.Drawing.Size(487, 387);
+            this.panelRight.Size = new System.Drawing.Size(486, 387);
             this.panelRight.TabIndex = 3;
             // 
             // groupBoxCoefficients
             // 
-            this.groupBoxCoefficients.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.groupBoxCoefficients.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBoxCoefficients.Controls.Add(this.cmbType);
             this.groupBoxCoefficients.Controls.Add(this.label6);
@@ -301,7 +300,7 @@
             this.groupBoxCoefficients.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxCoefficients.Name = "groupBoxCoefficients";
             this.groupBoxCoefficients.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxCoefficients.Size = new System.Drawing.Size(421, 68);
+            this.groupBoxCoefficients.Size = new System.Drawing.Size(420, 68);
             this.groupBoxCoefficients.TabIndex = 8;
             this.groupBoxCoefficients.TabStop = false;
             this.groupBoxCoefficients.Text = "Коэффициенты тега";
@@ -368,7 +367,7 @@
             // btnMoveDown
             // 
             this.btnMoveDown.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnMoveDown.Location = new System.Drawing.Point(410, 89);
+            this.btnMoveDown.Location = new System.Drawing.Point(409, 89);
             this.btnMoveDown.Margin = new System.Windows.Forms.Padding(2);
             this.btnMoveDown.Name = "btnMoveDown";
             this.btnMoveDown.Size = new System.Drawing.Size(70, 24);
@@ -380,7 +379,7 @@
             // btnMoveUp
             // 
             this.btnMoveUp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnMoveUp.Location = new System.Drawing.Point(410, 62);
+            this.btnMoveUp.Location = new System.Drawing.Point(409, 62);
             this.btnMoveUp.Margin = new System.Windows.Forms.Padding(2);
             this.btnMoveUp.Name = "btnMoveUp";
             this.btnMoveUp.Size = new System.Drawing.Size(70, 24);
@@ -392,7 +391,7 @@
             // btnExportTags
             // 
             this.btnExportTags.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnExportTags.Location = new System.Drawing.Point(150, 7);
+            this.btnExportTags.Location = new System.Drawing.Point(149, 7);
             this.btnExportTags.Margin = new System.Windows.Forms.Padding(2);
             this.btnExportTags.Name = "btnExportTags";
             this.btnExportTags.Size = new System.Drawing.Size(73, 24);
@@ -404,7 +403,7 @@
             // btnImportTags
             // 
             this.btnImportTags.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnImportTags.Location = new System.Drawing.Point(63, 7);
+            this.btnImportTags.Location = new System.Drawing.Point(62, 7);
             this.btnImportTags.Margin = new System.Windows.Forms.Padding(2);
             this.btnImportTags.Name = "btnImportTags";
             this.btnImportTags.Size = new System.Drawing.Size(73, 24);
@@ -415,8 +414,8 @@
             // 
             // listBoxSelectedTags
             // 
-            this.listBoxSelectedTags.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.listBoxSelectedTags.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listBoxSelectedTags.FormattingEnabled = true;
             this.listBoxSelectedTags.HorizontalScrollbar = true;
@@ -424,7 +423,7 @@
             this.listBoxSelectedTags.Margin = new System.Windows.Forms.Padding(2);
             this.listBoxSelectedTags.Name = "listBoxSelectedTags";
             this.listBoxSelectedTags.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.listBoxSelectedTags.Size = new System.Drawing.Size(347, 251);
+            this.listBoxSelectedTags.Size = new System.Drawing.Size(346, 251);
             this.listBoxSelectedTags.TabIndex = 1;
             this.listBoxSelectedTags.SelectedIndexChanged += new System.EventHandler(this.listBoxSelectedTags_SelectedIndexChanged);
             this.listBoxSelectedTags.DoubleClick += new System.EventHandler(this.listBoxSelectedTags_DoubleClick);
@@ -465,8 +464,8 @@
             // 
             // listBoxServers
             // 
-            this.listBoxServers.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.listBoxServers.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listBoxServers.FormattingEnabled = true;
             this.listBoxServers.HorizontalScrollbar = true;
@@ -537,7 +536,7 @@
             this.label14.Location = new System.Drawing.Point(15, 112);
             this.label14.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(100, 13);
+            this.label14.Size = new System.Drawing.Size(98, 13);
             this.label14.TabIndex = 6;
             this.label14.Text = "Количество тегов:";
             // 
@@ -555,7 +554,7 @@
             this.label13.Location = new System.Drawing.Point(15, 82);
             this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(81, 13);
+            this.label13.Size = new System.Drawing.Size(83, 13);
             this.label13.TabIndex = 4;
             this.label13.Text = "Удаленный IP:";
             // 
@@ -573,7 +572,7 @@
             this.label12.Location = new System.Drawing.Point(15, 52);
             this.label12.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(94, 13);
+            this.label12.Size = new System.Drawing.Size(84, 13);
             this.label12.TabIndex = 2;
             this.label12.Text = "Удаленный порт:";
             // 
@@ -593,7 +592,7 @@
             this.label11.Location = new System.Drawing.Point(15, 22);
             this.label11.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(33, 13);
+            this.label11.Size = new System.Drawing.Size(32, 13);
             this.label11.TabIndex = 0;
             this.label11.Text = "UDP:";
             // 
@@ -646,7 +645,7 @@
             this.label9.Location = new System.Drawing.Point(15, 32);
             this.label9.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(68, 13);
+            this.label9.Size = new System.Drawing.Size(71, 13);
             this.label9.TabIndex = 0;
             this.label9.Text = "Веб-сервер:";
             // 
@@ -679,7 +678,7 @@
             this.label8.Location = new System.Drawing.Point(15, 27);
             this.label8.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(97, 13);
+            this.label8.Size = new System.Drawing.Size(94, 13);
             this.label8.TabIndex = 0;
             this.label8.Text = "Вывод в консоль:";
             // 
@@ -712,7 +711,7 @@
             this.label15.Location = new System.Drawing.Point(15, 57);
             this.label15.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(106, 13);
+            this.label15.Size = new System.Drawing.Size(94, 13);
             this.label15.TabIndex = 2;
             this.label15.Text = "Время обновления:";
             // 
@@ -732,7 +731,7 @@
             this.label7.Location = new System.Drawing.Point(15, 27);
             this.label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(71, 13);
+            this.label7.Size = new System.Drawing.Size(72, 13);
             this.label7.TabIndex = 0;
             this.label7.Text = "OPC сервер:";
             // 
@@ -765,7 +764,6 @@
             this.ClientSize = new System.Drawing.Size(982, 561);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.statusStrip1);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MinimumSize = new System.Drawing.Size(750, 500);
             this.Name = "Form1";
