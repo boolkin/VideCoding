@@ -241,12 +241,9 @@ input:checked + .slider:before {
 }
 
 .results-panel {
-    /* ИЗМЕНЕНИЯ ЗДЕСЬ */
-    width: 33%; /* Изначально треть */
-    min-width: 200px; /* Минимальная ширина, чтобы не исчезла */
-    max-width: 80%; /* Максимальная ширина */
-    flex: none; /* Важно: отключаем автоматическое растягивание flex */
-    
+    width: 33%;
+    min-width: 200px;
+    flex: none;
     overflow-y: auto;
     padding: 16px;
     background: #fff;
