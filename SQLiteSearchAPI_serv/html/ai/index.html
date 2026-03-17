@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск по API</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <button class="menu-toggle" onclick="toggleFilter()" title="Фильтры">☰</button>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Введите поисковый запрос..." onkeypress="handleKeyPress(event)">
+                    <div class="action-buttons">
+                        <button id="searchBtn" onclick="performSearch()">Поиск</button>
+                        <button id="helpBtn" onclick="toggleHelp()" title="Справка">?</button>
+                        <button id="aiBtn" onclick="toggleAIModal()" title="AI-анализ">🤖</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="filterPanel" class="filter-panel">
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span>Базы данных и таблицы</span>
+                    <span class="select-all" onclick="selectAllTables()">Выбрать все</span>
+                </div>
+                <div class="filter-buttons" id="filterButtons">
+                    <!-- Dynamic buttons will be inserted here -->
+                </div>
+                
+                <!-- Limit Toggle -->
+                <div class="limit-control">
+                    <label class="switch">
+                        <input type="checkbox" id="limitToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Отключить лимит выдачи (limit=0)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="results-panel" id="resultsPanel">
+                <div class="empty-state">
+                    <p>Введите запрос для поиска</p>
+                </div>
+            </div>
+            <div class="details-panel" id="detailsPanel">
+                <button class="back-btn" onclick="closeDetails()" style="display: none;">← Назад к результатам</button>
+                <div class="empty-state">
+                    <p>Выберите запись для просмотра деталей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay" onclick="closeHelp(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Справка по поиску</div>
+                <button class="modal-close" onclick="toggleHelp()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Как работает поиск:</h3>
+                <ul>
+                    <li>Введите одно или несколько слов в поле поиска.</li>
+                    <li>Нажмите кнопку <b>Поиск</b> или клавишу <code>Enter</code>.</li>
+                    <li>Результаты отобразятся в левой панели.</li>
+                    <li>Кликните по результату, чтобы увидеть полные данные справа.</li>
+                </ul>
+
+                <h3>Фильтры:</h3>
+                <ul>
+                    <li>Нажмите <b>☰</b>, чтобы открыть панель фильтров.</li>
+                    <li>Выбирайте нужные базы данных и таблицы для сужения поиска.</li>
+                    <li>По умолчанию выбраны все таблицы.</li>
+                    <li>Переключатель <b>"Отключить лимит"</b> снимает ограничение на количество выдаваемых записей (по умолчанию сервер ограничивает выдачу).</li>
+                </ul>
+
+                <h3>Подсветка:</h3>
+                <p>В деталях записи найденные слова будут подсвечены желтым цветом.</p>
+            </div>
+        </div>
+    </div>
+ <!-- AI Modal -->
+<div id="aiModal" class="modal-overlay" onclick="closeAIModal(event)">
+    <div class="modal-content modal-ai" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">🤖 AI-анализ</div>
+            <button class="modal-close" onclick="toggleAIModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Контейнер чата -->
+            <div id="aiChatContainer" class="ai-chat-container" style="display: none; max-height: 400px; overflow-y: auto; margin-bottom: 12px; padding: 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #e0e0e0;"></div>
+            
+            <!-- Поле ввода вопроса -->
+            <div style="margin-bottom: 12px;">
+                <textarea id="aiQuestion" rows="2" 
+                          style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical;"
+                          placeholder="Ваш вопрос по найденным данным..."
+                          onkeypress="handleAIQuestionKey(event)"></textarea>
+            </div>
+
+            <button id="aiSendBtn" onclick="sendToAI()" 
+                    style="background: #9c27b0; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; width: 100%;">
+                📤 Отправить
+            </button>
+
+            <div id="aiStatus" style="margin-top: 12px; font-size: 13px; color: #666;"></div>
+        </div>
+    </div>
+</div>
+    <script>
+        // ===== CONFIGURATION =====
+        const API_BASE_URL = 'http://localhost:5000';
+        let LLAMA_API_URL = 'http://localhost:8080/completion'; 
+        // =========================
+
+        let schema = [];
+        let selectedTables = new Set();
+        let currentResults = [];
+        let currentQuery = '';
+        let isMobile = window.innerWidth <= 768;
+
+        // Initialize
+        window.addEventListener('load', () => {
+            fetchSchema();
+            window.addEventListener('resize', () => {
+                isMobile = window.innerWidth <= 768;
+            });
+        });
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        function toggleFilter() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('active');
+        }
+
+        function toggleHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.toggle('active');
+        }
+
+        function closeHelp(event) {
+            if (event.target.id === 'helpModal') {
+                toggleHelp();
+            }
+        }
+
+        async function fetchSchema() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/schema`);
+                const data = await response.json();
+                
+                schema = data.schema || [];
+                renderFilters();
+            } catch (error) {
+                console.error('Error fetching schema:', error);
+                showMessage('resultsPanel', 'Ошибка загрузки структуры БД: ' + error.message, 'error');
+            }
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('filterButtons');
+            container.innerHTML = '';
+            selectedTables.clear();
+
+            // Group by database
+            const dbGroups = {};
+            schema.forEach(item => {
+                if (!dbGroups[item.db]) {
+                    dbGroups[item.db] = new Set();
+                }
+                dbGroups[item.db].add(item.table);
+                // Select all by default
+                selectedTables.add(`${item.db}:${item.table}`);
+            });
+
+            // Create filter buttons
+            Object.keys(dbGroups).forEach(db => {
+                const section = document.createElement('div');
+                section.style.marginBottom = '12px';
+                section.style.width = '100%';
+                
+                const title = document.createElement('div');
+                title.className = 'filter-section-title';
+                title.textContent = db;
+                section.appendChild(title);
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'filter-buttons';
+
+                dbGroups[db].forEach(table => {
+                    const key = `${db}:${table}`;
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn active';
+                    btn.textContent = table;
+                    btn.onclick = () => toggleTable(key, btn);
+                    buttonsDiv.appendChild(btn);
+                });
+
+                section.appendChild(buttonsDiv);
+                container.appendChild(section);
+            });
+        }
+
+        function toggleTable(key, btn) {
+            if (selectedTables.has(key)) {
+                selectedTables.delete(key);
+                btn.classList.remove('active');
+            } else {
+                selectedTables.add(key);
+                btn.classList.add('active');
+            }
+        }
+
+        function selectAllTables() {
+            selectedTables.clear();
+            schema.forEach(item => {
+                selectedTables.add(`${item.db}:${item.table}`);
+            });
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.add('active');
+            });
+        }
+
+        // Функция очистки деталей перед новым поиском
+        function clearDetails() {
+            const detailsPanel = document.getElementById('detailsPanel');
+            if (isMobile) {
+                const backBtn = document.querySelector('.back-btn');
+                detailsPanel.innerHTML = '';
+                detailsPanel.appendChild(backBtn);
+                detailsPanel.classList.remove('active');
+                backBtn.style.display = 'none';
+            } else {
+                detailsPanel.innerHTML = '<div class="empty-state"><p>Выберите запись для просмотра деталей</p></div>';
+            }
+            
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            currentResults = [];
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            resetAIModal();
+            if (!query) {
+                alert('Введите поисковый запрос');
+                return;
+            }
+
+            // Очищаем детали перед новым поиском
+            clearDetails();
+
+            currentQuery = query;
+
+            const resultsPanel = document.getElementById('resultsPanel');
+            resultsPanel.innerHTML = '<div class="empty-state"><div class="loading"></div><p>Поиск...</p></div>';
+
+            try {
+                // Build URL
+                let url = `${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&fields=1`;
+                
+                // Проверка лимита
+                const limitDisabled = document.getElementById('limitToggle').checked;
+                if (limitDisabled) {
+                    url += '&limit=0';
+                }
+                
+                // Add filters if not all tables selected
+                const allSelected = schema.length === selectedTables.size;
+                if (!allSelected && selectedTables.size > 0) {
+                    const dbs = new Set();
+                    const tables = new Set();
+                    
+                    selectedTables.forEach(key => {
+                        const [db, table] = key.split(':');
+                        dbs.add(db);
+                        tables.add(table);
+                    });
+                    
+                    if (dbs.size > 0) url += `&db=${Array.from(dbs).join(',')}`;
+                    if (tables.size > 0) url += `&table=${Array.from(tables).join(',')}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                renderResults(data);
+            } catch (error) {
+                console.error('Search error:', error);
+                showMessage('resultsPanel', 'Ошибка поиска: ' + error.message, 'error');
+            }
+        }
+
+        function renderResults(data) {
+            const panel = document.getElementById('resultsPanel');
+            panel.innerHTML = '';
+
+            if (data.message) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message-box message-info';
+                msgDiv.textContent = data.message;
+                panel.appendChild(msgDiv);
+            }
+
+            if (data.count !== undefined) {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'count-info';
+                countDiv.textContent = `Найдено записей: ${data.count}`;
+                panel.appendChild(countDiv);
+            }
+
+            if (data.errors && data.errors.length > 0) {
+                data.errors.forEach(err => {
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'message-box message-error';
+                    errDiv.textContent = err.message || err;
+                    panel.appendChild(errDiv);
+                });
+            }
+
+            if (data.items && data.items.length > 0) {
+                currentResults = data.items;
+                
+                data.items.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.onclick = () => selectResult(index);
+                    
+                    let displayText = '';
+                    if (item.data) {
+                        displayText = item.data.FilePath || Object.values(item.data)[0] || '';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="result-title">${escapeHtml(displayText)}</div>
+                        <div class="result-meta">${item.globalId}</div>
+                    `;
+                    
+                    panel.appendChild(div);
+                });
+            } else if (!data.items || data.items.length === 0) {
+                panel.innerHTML += '<div class="empty-state"><p>Ничего не найдено</p></div>';
+            }
+        }
+
+        function selectResult(index) {
+            const item = currentResults[index];
+            if (!item) return;
+
+            document.querySelectorAll('.result-item').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+
+            fetchRecordDetails(item.globalId);
+
+            if (isMobile) {
+                document.getElementById('detailsPanel').classList.add('active');
+                document.querySelector('.back-btn').style.display = 'flex';
+            }
+        }
+
+        async function fetchRecordDetails(globalId) {
+            const detailsPanel = document.getElementById('detailsPanel');
+            if (!isMobile) {
+                detailsPanel.innerHTML = '<div class="empty-state"><div class="loading"></div><p>Загрузка...</p></div>';
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/records?id=${encodeURIComponent(globalId)}`);
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0) {
+                    renderDetails(data.items[0]);
+                } else {
+                    detailsPanel.innerHTML = '<div class="empty-state"><p>Запись не найдена</p></div>';
+                }
+
+                if (data.errors && data.errors.length > 0) {
+                    data.errors.forEach(err => {
+                        const errDiv = document.createElement('div');
+                        errDiv.className = 'message-box message-error';
+                        errDiv.textContent = err.message || err;
+                        detailsPanel.appendChild(errDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching record:', error);
+                detailsPanel.innerHTML = `<div class="message-box message-error">Ошибка загрузки: ${error.message}</div>`;
+            }
+        }
+        function highlightText(text, query) {
+            if (!query || !text) {
+                return escapeHtml(String(text));
+            }
+
+            const escapedText = escapeHtml(String(text));
+            
+            // Удаляем скобки перед разбивкой на слова, чтобы "(лофт loft) ошибка" 
+            // превратилось в ["лофт", "loft", "ошибка"], а не ["(лофт", "loft)", "ошибка"]
+            const cleanQuery = query.replace(/[()]/g, ' ');
+            const words = cleanQuery.trim().split(/\s+/).filter(w => w.length > 0);
+            
+            if (words.length === 0) {
+                return escapedText;
+            }
+
+            // Экранируем спецсимволы regex для каждого слова
+            const escapedWords = words.map(word => {
+                return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            });
+            
+            // Создаём паттерн с логикой ИЛИ для подсветки
+            const pattern = '(' + escapedWords.join('|') + ')';
+            const regex = new RegExp(pattern, 'gi');
+            
+            return escapedText.replace(regex, '<mark class="highlight">$1</mark>');
+        }
+
+        function renderDetails(item) {
+            const panel = document.getElementById('detailsPanel');
+            if (isMobile) {
+                const backBtn = document.querySelector('.back-btn');
+                panel.innerHTML = '';
+                panel.appendChild(backBtn);
+            } else {
+                panel.innerHTML = '';
+            }
+
+            const recordDiv = document.createElement('div');
+            recordDiv.className = 'detail-record';
+
+            const header = document.createElement('div');
+            header.className = 'detail-header';
+            header.textContent = item.globalId;
+            recordDiv.appendChild(header);
+
+            if (item.data) {
+                Object.entries(item.data).forEach(([key, value]) => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'detail-field';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'detail-label';
+                    label.textContent = key;
+                    
+                    const valueDiv = document.createElement('div');
+                    valueDiv.className = 'detail-value';
+                    
+                    if (value !== null && value !== undefined) {
+                        valueDiv.innerHTML = highlightText(value, currentQuery);
+                    } else {
+                        valueDiv.textContent = '';
+                    }
+                    
+                    fieldDiv.appendChild(label);
+                    fieldDiv.appendChild(valueDiv);
+                    recordDiv.appendChild(fieldDiv);
+                });
+            }
+
+            panel.appendChild(recordDiv);
+        }
+
+        function closeDetails() {
+            document.getElementById('detailsPanel').classList.remove('active');
+            document.querySelector('.back-btn').style.display = 'none';
+        }
+
+        function showMessage(panelId, message, type) {
+            const panel = document.getElementById(panelId);
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message-box message-${type}`;
+            msgDiv.textContent = message;
+            panel.innerHTML = '';
+            panel.appendChild(msgDiv);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+
+// ==========================================
+// ===== AI ASSISTANT FUNCTIONS =====
+// ==========================================
+
+// Хранение истории чата в рамках одной сессии (пока окно открыто)
+let aiChatHistory = [];
+let aiSessionContext = null; // Контекст из поиска для текущей сессии
+let aiSessionData = null; // ← Новая переменная для хранения данных
+
+// 1. Полный сброс AI-сессии
+function resetAIModal() {
+    aiChatHistory = [];
+    aiSessionContext = null;
+    
+    
+    const statusDiv = document.getElementById('aiStatus');
+    const responseDiv = document.getElementById('aiResponse');
+    const aiBtn = document.getElementById('aiSendBtn');
+    const questionField = document.getElementById('aiQuestion');
+    const chatContainer = document.getElementById('aiChatContainer');
+    
+    if (statusDiv) {
+        statusDiv.textContent = '';
+        statusDiv.className = '';
+    }
+    if (responseDiv) {
+        responseDiv.style.display = 'none';
+        responseDiv.textContent = '';
+    }
+    if (aiBtn) {
+        aiBtn.disabled = false;
+        aiBtn.textContent = '📤 Отправить';
+    }
+    if (questionField) {
+        questionField.value = '';
+        questionField.disabled = false;
+    }
+    if (chatContainer) {
+        chatContainer.innerHTML = '';
+        chatContainer.style.display = 'none';
+    }
+}
+
+// 2. Инициализация нового чата при открытии окна
+function initAIChat() {
+    if (!currentQuery || !currentResults?.length) {
+        return false;
+    }
+    
+    // Создаём контекст из текущих результатов поиска
+    aiSessionContext = {
+        query: currentQuery,
+        resultsCount: currentResults.length,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Первое системное сообщение в чат
+    addChatMessage('system', `📊 Анализ по запросу: "${currentQuery}"\nНайдено записей: ${currentResults.length}\n\nЗадавайте уточняющие вопросы по этим данным.`);
+    
+    // Предзаполняем поле вопроса подсказкой
+    const questionField = document.getElementById('aiQuestion');
+    if (questionField && !questionField.value.trim()) {
+        questionField.value = `Проанализируй найденные документы. Ответь что есть общего в ситуациях. Какие решения чаще всего бывают`;
+    }
+    
+    return true;
+}
+
+// 3. Добавление сообщения в чат (визуально)
+function addChatMessage(role, text) {
+    const chatContainer = document.getElementById('aiChatContainer');
+    if (!chatContainer) return;
+    
+    chatContainer.style.display = 'block';
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message chat-${role}`;
+    
+    const roleLabel = role === 'user' ? '👤 Вы' : (role === 'system' ? '📊 Система' : '🤖 ИИ');
+    msgDiv.innerHTML = `<div class="chat-role">${roleLabel}</div><div class="chat-text">${text.replace(/\n/g, '<br>')}</div>`;
+    
+    chatContainer.appendChild(msgDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Сохраняем в историю для отправки в ИИ
+    if (role !== 'system') {
+        aiChatHistory.push({ role, content: text });
+    }
+}
+
+// 4. Открытие/закрытие модального окна
+function toggleAIModal() {
+    const modal = document.getElementById('aiModal');
+    const isActive = modal.classList.contains('active');
+    
+    if (!isActive) {
+        // ОТКРЫТИЕ: полный сброс и новый чат
+        resetAIModal();
+        
+        if (initAIChat()) {
+            // Успешно инициализировали чат
+            document.getElementById('aiQuestion').disabled = false;
+            document.getElementById('aiSendBtn').disabled = false;
+        } else {
+            // Нет данных для анализа
+            addChatMessage('system', '⚠️ Сначала выполните поиск, чтобы были данные для анализа.');
+            document.getElementById('aiQuestion').disabled = true;
+            document.getElementById('aiSendBtn').disabled = true;
+        }
+    }
+    // При закрытии - история остаётся в переменной, но сбросится при следующем открытии
+    
+    modal.classList.toggle('active');
+}
+
+function closeAIModal(event) {
+    if (event.target.id === 'aiModal') {
+        toggleAIModal();
+    }
+}
+
+// 5. Парсинг слов из запроса (игнорируем скобки)
+function parseQueryWords(query) {
+    return query.replace(/[()]/g, ' ')
+                .trim()
+                .split(/\s+/)
+                .filter(w => w.length > 0);
+}
+
+// 6. Фильтрация строк ReportText (щедрое ИЛИ)
+function filterLinesByQuery(text, query) {
+    if (!text || !query) return text;
+    
+    const lines = String(text).split('\n');
+    const words = parseQueryWords(query);
+    
+    if (words.length === 0) return text;
+    
+    const filtered = lines.filter(line => {
+        const lowerLine = line.toLowerCase();
+        return words.some(word => lowerLine.includes(word.toLowerCase()));
+    });
+    
+    return filtered.length > 0 ? filtered.join('\n') : text;
+}
+
+// 7. Подготовка данных для ИИ
+function prepareDataForAI(results, query) {
+    if (!results?.items?.length) {
+        return { items: [], query, meta: { count: 0 } };
+    }
+    
+    const processed = results.items.map(item => {
+        const cloned = JSON.parse(JSON.stringify(item));
+        
+        if (cloned.data?.ReportText) {
+            cloned.data.ReportText = filterLinesByQuery(cloned.data.ReportText, query);
+            if (!cloned.data.ReportText.trim()) {
+                cloned.data.ReportText = '[Нет строк с ключевыми словами]';
+            }
+        }
+        return cloned;
+    });
+    
+    return {
+        items: processed,
+        query: query,
+        meta: {
+            count: results.count || processed.length,
+            timestamp: new Date().toISOString()
+        }
+    };
+}
+
+// 8. Отправка запроса к Llama.cpp (с историей чата)
+async function sendToAI() {
+    const aiBtn = document.getElementById('aiSendBtn');
+    const statusDiv = document.getElementById('aiStatus');
+    const questionField = document.getElementById('aiQuestion');
+    const question = questionField.value.trim();
+    
+    if (!question) {
+        statusDiv.textContent = '⚠️ Введите вопрос';
+        statusDiv.className = 'error';
+        return;
+    }
+    
+    if (!aiSessionContext) {
+        statusDiv.textContent = '⚠️ Нет данных для анализа. Выполните поиск.';
+        statusDiv.className = 'error';
+        return;
+    }
+    
+    // Добавляем вопрос пользователя в чат
+    addChatMessage('user', question);
+    
+    // Блокируем UI
+    aiBtn.disabled = true;
+    aiBtn.textContent = '⏳ Думаю...';
+    questionField.disabled = true;
+    statusDiv.textContent = '';
+    
+    try {
+        // --- ШАГ 1: Получаем полные данные (только при первом вопросе в сессии) ---
+        let preparedData;
+        if (aiChatHistory.length <= 1) {
+            // Первый вопрос - загружаем данные с API
+            statusDiv.textContent = '📥 Загружаю данные...';
+            statusDiv.className = 'loading';
+            
+            let url = `${API_BASE_URL}/api/search?q=${encodeURIComponent(aiSessionContext.query)}&fields=*&db=reports`;
+            if (document.getElementById('limitToggle').checked) url += '&limit=0';
+            
+            const allSelected = schema.length === selectedTables.size;
+            if (!allSelected && selectedTables.size > 0) {
+                const dbs = new Set(), tables = new Set();
+                selectedTables.forEach(key => {
+                    const [db, table] = key.split(':');
+                    dbs.add(db); tables.add(table);
+                });
+                if (dbs.size) url += `&db=${Array.from(dbs).join(',')}`;
+                if (tables.size) url += `&table=${Array.from(tables).join(',')}`;
+            }
+            
+            const searchResp = await fetch(url);
+            const searchData = await searchResp.json();
+            preparedData = prepareDataForAI(searchData, aiSessionContext.query);
+            aiSessionData = preparedData;
+        } else {
+            // Последующие вопросы - используем кэш (данные не меняются в рамках сессии)
+            statusDiv.textContent = '🧠 Анализирую...';
+            statusDiv.className = 'loading';
+            
+            // Для последующих вопросов можно не загружать данные заново
+            // Если нужно обновить - раскомментируйте загрузку выше
+            //preparedData = { cached: true, query: aiSessionContext.query };
+            preparedData = aiSessionData;
+        }
+        
+        // --- ШАГ 2: Формируем промпт с историей чата ---
+        let chatHistoryText = '';
+        if (aiChatHistory.length > 1) {
+            // Добавляем историю предыдущих вопросов-ответов
+            chatHistoryText = aiChatHistory.slice(0, -1).map(msg => 
+                `${msg.role === 'user' ? 'Пользователь' : 'Ассистент'}: ${msg.content}`
+            ).join('\n\n');
+        }
+        
+        const fullPrompt = `[INST] Ты аналитик оперативных журналов по ситуациям на производстве.
+У тебя есть контекст из результатов поиска в этих журналах (JSON).
+Отвечай ТОЛЬКО на основе этого контекста и поискового запроса, который может указывать на конкретный агрегат или механизм.
+Формат: кратко, факты, по-русски.
+
+<search_query>${aiSessionContext.query}</search_query>
+<results_count>${aiSessionContext.resultsCount}</results_count>
+
+<context>
+${JSON.stringify(preparedData, null, 2)}
+</context>
+
+${chatHistoryText ? `<chat_history>\n${chatHistoryText}\n</chat_history>` : ''}
+
+<question>
+${question}
+</question>
+
+Ответ: [/INST]`;
+
+        // --- ШАГ 3: Настройки генерации ---
+        const llamaPayload = {
+            prompt: fullPrompt,
+            n_predict: 512,
+            temperature: 0.15,
+            top_p: 0.9,
+            repeat_penalty: 1.25,
+            stop: [
+                "[/INST]", "[INST]", "<question>", "</question>",
+                "<context>", "</context>", "<chat_history>", "</chat_history>",
+                "USER:", "ASSISTANT:", "\n\nUser:", "\n\nQuestion:"
+            ]
+        };
+        
+        // --- ШАГ 4: Лог в консоль ---
+        console.log('📦 Context:', aiSessionContext);
+        console.log('💬 Chat history length:', aiChatHistory.length);
+        console.log('📝 Prompt:', fullPrompt);
+        console.groupEnd();
+        
+        // --- ШАГ 5: Отправка на Llama ---
+        const llamaResp = await fetch(LLAMA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(llamaPayload)
+        });
+        
+        const rawText = await llamaResp.text();
+        let llamaData;
+        try {
+            llamaData = JSON.parse(rawText);
+        } catch (e) {
+            throw new Error('Не JSON: ' + rawText.substring(0, 200));
+        }
+        
+        const answer = llamaData.content || llamaData.response || llamaData.text || llamaData.output;
+        
+        if (!answer || answer.trim() === '') {
+            throw new Error('Пустой ответ. Получено: ' + JSON.stringify(llamaData).substring(0, 300));
+        }
+        
+        // --- ШАГ 6: Показ ответа в чате ---
+        addChatMessage('assistant', answer);
+        statusDiv.textContent = '✅';
+        statusDiv.className = 'success';
+        questionField.value = ''; // Очищаем поле для нового вопроса
+        questionField.focus();
+        
+    } catch (error) {
+        console.error('❌ AI error:', error);
+        statusDiv.textContent = `❌ ${error.message}`;
+        statusDiv.className = 'error';
+        
+        if (error.message.includes('404')) {
+            statusDiv.innerHTML += '<br><small>💡 Эндпоинт: <b>/completion</b></small>';
+        } else if (error.message.includes('Failed to fetch')) {
+            statusDiv.innerHTML += '<br><small>💡 Сервер не отвечает</small>';
+        }
+    } finally {
+        aiBtn.disabled = false;
+        aiBtn.textContent = '📤 Отправить';
+        questionField.disabled = false;
+        questionField.focus();
+    }
+}
+
+// 9. Обработка Enter в поле вопроса
+function handleAIQuestionKey(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendToAI();
+    }
+}
+    </script>
+</body>
+</html>

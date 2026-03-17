@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>БД поиск</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <button class="menu-toggle" onclick="toggleFilter()" title="Фильтры">☰</button>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Введите поисковый запрос..." onkeypress="handleKeyPress(event)">
+                    <div class="action-buttons">
+                        <button id="searchBtn" onclick="performSearch()">Поиск</button>
+                        <button id="helpBtn" onclick="toggleHelp()" title="Справка">?</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="filterPanel" class="filter-panel">
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span>Базы данных и таблицы</span>
+                    <span class="select-all" onclick="selectAllTables()">Выбрать все</span>
+                </div>
+                <div class="filter-buttons" id="filterButtons">
+                    <!-- Dynamic buttons will be inserted here -->
+                </div>
+                
+                <!-- Limit Toggle -->
+                <div class="limit-control">
+                    <label class="switch">
+                        <input type="checkbox" id="limitToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Отключить лимит выдачи (limit=0)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="results-panel" id="resultsPanel">
+                <div class="empty-state">
+                    <p>Введите запрос для поиска</p>
+                </div>
+            </div>
+            <div class="details-panel" id="detailsPanel">
+                <button class="back-btn" onclick="closeDetails()" style="display: none;">← Назад к результатам</button>
+                <div class="empty-state">
+                    <p>Выберите запись для просмотра деталей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay" onclick="closeHelp(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">Справка по поиску</div>
+                <button class="modal-close" onclick="toggleHelp()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Как работает поиск:</h3>
+                <ul>
+                    <li>Введите одно или несколько слов в поле поиска. Рекомендуется вводить слова без окончаний, чтобы захватить больше результатов (например: "булк 2025 ошиб" - журналы Булкина за 2025 год содеражащие слово ошибка, ошибок, ошибки)</li>
+                    <li>Нажмите кнопку <b>Поиск</b> или клавишу <code>Enter</code>.</li>
+                    <li>Результаты отобразятся в левой панели в виде списка документов, содеражащие все эти слова.</li>
+                    <li>Кликните по результату, чтобы увидеть полный документ справа.</li>
+                </ul>
+
+                <h3>Фильтры:</h3>
+                <ul>
+                    <li>Нажмите <b>☰</b>, чтобы открыть панель фильтров.</li>
+                    <li>Выбирайте нужные базы данных и таблицы для сужения поиска (по умолчанию выбраны все таблицы).</li>
+                    <li>В скобках можно указывать синонимы, например "(loft лофт) 41"</li>
+                    <li>Переключатель <b>"Отключить лимит"</b> снимает ограничение на количество выдаваемых записей (по умолчанию сервер ограничивает выдачу).</li>
+                </ul>
+
+                <h3>Подсветка:</h3>
+                <p>В деталях записи найденные слова будут подсвечены желтым цветом.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+        // =========================
+
+        let schema = [];
+        let selectedTables = new Set();
+        let currentResults = [];
+        let currentQuery = '';
+        let isMobile = window.innerWidth <= 768;
+
+        // Initialize
+        window.addEventListener('load', () => {
+            fetchSchema();
+            window.addEventListener('resize', () => {
+                isMobile = window.innerWidth <= 768;
+            });
+        });
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        function toggleFilter() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('active');
+        }
+
+        function toggleHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.toggle('active');
+        }
+
+        function closeHelp(event) {
+            if (event.target.id === 'helpModal') {
+                toggleHelp();
+            }
+        }
+
+        async function fetchSchema() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/schema`);
+                const data = await response.json();
+                
+                schema = data.schema || [];
+                renderFilters();
+            } catch (error) {
+                console.error('Error fetching schema:', error);
+                showMessage('resultsPanel', 'Ошибка загрузки структуры БД: ' + error.message, 'error');
+            }
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('filterButtons');
+            container.innerHTML = '';
+            selectedTables.clear();
+
+            // Group by database
+            const dbGroups = {};
+            schema.forEach(item => {
+                if (!dbGroups[item.db]) {
+                    dbGroups[item.db] = new Set();
+                }
+                dbGroups[item.db].add(item.table);
+                // Select all by default
+                selectedTables.add(`${item.db}:${item.table}`);
+            });
+
+            // Create filter buttons
+            Object.keys(dbGroups).forEach(db => {
+                const section = document.createElement('div');
+                section.style.marginBottom = '12px';
+                section.style.width = '100%';
+                
+                const title = document.createElement('div');
+                title.className = 'filter-section-title';
+                title.textContent = db;
+                section.appendChild(title);
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'filter-buttons';
+
+                dbGroups[db].forEach(table => {
+                    const key = `${db}:${table}`;
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn active';
+                    btn.textContent = table;
+                    btn.onclick = () => toggleTable(key, btn);
+                    buttonsDiv.appendChild(btn);
+                });
+
+                section.appendChild(buttonsDiv);
+                container.appendChild(section);
+            });
+        }
+
+        function toggleTable(key, btn) {
+            if (selectedTables.has(key)) {
+                selectedTables.delete(key);
+                btn.classList.remove('active');
+            } else {
+                selectedTables.add(key);
+                btn.classList.add('active');
+            }
+        }
+
+        function selectAllTables() {
+            selectedTables.clear();
+            schema.forEach(item => {
+                selectedTables.add(`${item.db}:${item.table}`);
+            });
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.add('active');
+            });
+        }
+
+        // Функция очистки деталей перед новым поиском
+        function clearDetails() {
+            const detailsPanel = document.getElementById('detailsPanel');
+            if (isMobile) {
+                const backBtn = document.querySelector('.back-btn');
+                detailsPanel.innerHTML = '';
+                detailsPanel.appendChild(backBtn);
+                detailsPanel.classList.remove('active');
+                backBtn.style.display = 'none';
+            } else {
+                detailsPanel.innerHTML = '<div class="empty-state"><p>Выберите запись для просмотра деталей</p></div>';
+            }
+            
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            currentResults = [];
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('Введите поисковый запрос');
+                return;
+            }
+
+            // Очищаем детали перед новым поиском
+            clearDetails();
+
+            currentQuery = query;
+
+            const resultsPanel = document.getElementById('resultsPanel');
+            resultsPanel.innerHTML = '<div class="empty-state"><div class="loading"></div><p>Поиск...</p></div>';
+
+            try {
+                // Build URL
+                let url = `${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&fields=1`;
+                
+                // Проверка лимита
+                const limitDisabled = document.getElementById('limitToggle').checked;
+                if (limitDisabled) {
+                    url += '&limit=0';
+                }
+                
+                // Add filters if not all tables selected
+                const allSelected = schema.length === selectedTables.size;
+                if (!allSelected && selectedTables.size > 0) {
+                    const dbs = new Set();
+                    const tables = new Set();
+                    
+                    selectedTables.forEach(key => {
+                        const [db, table] = key.split(':');
+                        dbs.add(db);
+                        tables.add(table);
+                    });
+                    
+                    if (dbs.size > 0) url += `&db=${Array.from(dbs).join(',')}`;
+                    if (tables.size > 0) url += `&table=${Array.from(tables).join(',')}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                renderResults(data);
+            } catch (error) {
+                console.error('Search error:', error);
+                showMessage('resultsPanel', 'Ошибка поиска: ' + error.message, 'error');
+            }
+        }
+
+        function renderResults(data) {
+            const panel = document.getElementById('resultsPanel');
+            panel.innerHTML = '';
+
+            if (data.message) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message-box message-info';
+                msgDiv.textContent = data.message;
+                panel.appendChild(msgDiv);
+            }
+
+            if (data.count !== undefined) {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'count-info';
+                countDiv.textContent = `Найдено записей: ${data.count}`;
+                panel.appendChild(countDiv);
+            }
+
+            if (data.errors && data.errors.length > 0) {
+                data.errors.forEach(err => {
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'message-box message-error';
+                    errDiv.textContent = err.message || err;
+                    panel.appendChild(errDiv);
+                });
+            }
+
+            if (data.items && data.items.length > 0) {
+                currentResults = data.items;
+                
+                data.items.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.onclick = () => selectResult(index);
+                    
+                    let displayText = '';
+                    if (item.data) {
+                        displayText = item.data.FilePath || Object.values(item.data)[0] || '';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="result-title">${escapeHtml(displayText)}</div>
+                        <div class="result-meta">${item.globalId}</div>
+                    `;
+                    
+                    panel.appendChild(div);
+                });
+            } else if (!data.items || data.items.length === 0) {
+                panel.innerHTML += '<div class="empty-state"><p>Ничего не найдено</p></div>';
+            }
+        }
+
+        function selectResult(index) {
+            const item = currentResults[index];
+            if (!item) return;
+
+            document.querySelectorAll('.result-item').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+
+            fetchRecordDetails(item.globalId);
+
+            if (isMobile) {
+                document.getElementById('detailsPanel').classList.add('active');
+                document.querySelector('.back-btn').style.display = 'flex';
+            }
+        }
+
+        async function fetchRecordDetails(globalId) {
+            const detailsPanel = document.getElementById('detailsPanel');
+            if (!isMobile) {
+                detailsPanel.innerHTML = '<div class="empty-state"><div class="loading"></div><p>Загрузка...</p></div>';
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/records?id=${encodeURIComponent(globalId)}`);
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0) {
+                    renderDetails(data.items[0]);
+                } else {
+                    detailsPanel.innerHTML = '<div class="empty-state"><p>Запись не найдена</p></div>';
+                }
+
+                if (data.errors && data.errors.length > 0) {
+                    data.errors.forEach(err => {
+                        const errDiv = document.createElement('div');
+                        errDiv.className = 'message-box message-error';
+                        errDiv.textContent = err.message || err;
+                        detailsPanel.appendChild(errDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching record:', error);
+                detailsPanel.innerHTML = `<div class="message-box message-error">Ошибка загрузки: ${error.message}</div>`;
+            }
+        }
+        function highlightText(text, query) {
+            if (!query || !text) {
+                return escapeHtml(String(text));
+            }
+
+            const escapedText = escapeHtml(String(text));
+            
+            // Удаляем скобки перед разбивкой на слова, чтобы "(лофт loft) ошибка" 
+            // превратилось в ["лофт", "loft", "ошибка"], а не ["(лофт", "loft)", "ошибка"]
+            const cleanQuery = query.replace(/[()]/g, ' ');
+            const words = cleanQuery.trim().split(/\s+/).filter(w => w.length > 0);
+            
+            if (words.length === 0) {
+                return escapedText;
+            }
+
+            // Экранируем спецсимволы regex для каждого слова
+            const escapedWords = words.map(word => {
+                return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            });
+            
+            // Создаём паттерн с логикой ИЛИ для подсветки
+            const pattern = '(' + escapedWords.join('|') + ')';
+            const regex = new RegExp(pattern, 'gi');
+            
+            return escapedText.replace(regex, '<mark class="highlight">$1</mark>');
+        }
+
+     function renderDetails(item) {
+    const panel = document.getElementById('detailsPanel');
+    
+    // 1. Очистка панели (с учетом мобильной версии)
+    if (typeof isMobile !== 'undefined' && isMobile) {
+        const backBtn = document.querySelector('.back-btn');
+        panel.innerHTML = '';
+        if (backBtn) panel.appendChild(backBtn);
+    } else {
+        panel.innerHTML = '';
+    }
+
+    const recordDiv = document.createElement('div');
+    recordDiv.className = 'detail-record';
+
+    // 2. Создание заголовка (globalId)
+    const header = document.createElement('div');
+    header.className = 'detail-header';
+    header.textContent = item.globalId;
+    recordDiv.appendChild(header);
+
+    // 3. Отрисовка всех полей из item.data
+    if (item.data) {
+        Object.entries(item.data).forEach(([key, value]) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'detail-field';
+            
+            const label = document.createElement('div');
+            label.className = 'detail-label';
+            label.textContent = key;
+            
+            const valueDiv = document.createElement('div');
+            valueDiv.className = 'detail-value';
+            
+            if (value !== null && value !== undefined) {
+                // Разбиваем значение на строки для поиска таблиц
+                const lines = String(value).split('\n');
+                const fragment = document.createDocumentFragment();
+                let currentTable = null;
+
+                lines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    
+                    // Если строка похожа на строку таблицы (начинается с |)
+                    if (trimmedLine.startsWith('|')) {
+                        if (!currentTable) {
+                            currentTable = document.createElement('table');
+                            currentTable.style.cssText = 'border-collapse: collapse; margin: 10px 0; width: 100%;';
+                            fragment.appendChild(currentTable);
+                        }
+                        
+                        const row = document.createElement('tr');
+                        // Разбиваем строку по |, убирая пустые края
+                        const cells = line.split('|').filter((_, i, arr) => i > 0 && (i < arr.length - 1 || _.trim() !== ''));
+                        
+                        cells.forEach(cellText => {
+                            const td = document.createElement('td');
+                            td.style.cssText = 'border: 1px solid #ddd; padding: 6px 10px;';
+                            // Вставляем текст с ПОДСВЕТКОЙ прямо в ячейку
+                            td.innerHTML = highlightText(cellText.trim(), typeof currentQuery !== 'undefined' ? currentQuery : '');
+                            row.appendChild(td);
+                        });
+                        currentTable.appendChild(row);
+                    } else {
+                        // Если обычная текстовая строка
+                        currentTable = null; 
+                        const div = document.createElement('div');
+                        // Вставляем текст с ПОДСВЕТКОЙ
+                        div.innerHTML = highlightText(line, typeof currentQuery !== 'undefined' ? currentQuery : '');
+                        fragment.appendChild(div);
+                    }
+                });
+                valueDiv.appendChild(fragment);
+            } else {
+                valueDiv.textContent = '';
+            }
+            
+            fieldDiv.appendChild(label);
+            fieldDiv.appendChild(valueDiv);
+            recordDiv.appendChild(fieldDiv);
+        });
+    }
+
+    // 4. Добавляем всё собранное в панель
+    panel.appendChild(recordDiv);
+}
+
+
+        function closeDetails() {
+            document.getElementById('detailsPanel').classList.remove('active');
+            document.querySelector('.back-btn').style.display = 'none';
+        }
+
+        function showMessage(panelId, message, type) {
+            const panel = document.getElementById(panelId);
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message-box message-${type}`;
+            msgDiv.textContent = message;
+            panel.innerHTML = '';
+            panel.appendChild(msgDiv);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+		
+
+
+    </script>
+</body>
+</html>
