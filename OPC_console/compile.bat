@@ -1,0 +1,1 @@
+C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe -nologo -r:OpcNetApi.dll -r:OpcNetApi.Com.dll -r:OpcComRcw.dll Program.cs

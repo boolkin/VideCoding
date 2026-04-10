@@ -1,0 +1,3 @@
+C:\projects\DocxToSqlite\publish\DocxToSqlite.pdb
+C:\projects\DocxToSqlite\publish\e_sqlite3.dll
+C:\projects\DocxToSqlite\publish\DocxToSqlite.exe
