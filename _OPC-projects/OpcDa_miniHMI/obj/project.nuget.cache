@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "V2rijmeR2YUpyuxRPmpE9VKHgLALH3nWP3pwJy6ciOQubSx0J/wV+9f9gQPaCmlldD6w2EoeSCnMrmibJ/5Gvg==",
+  "success": true,
+  "projectFilePath": "C:\\git\\VibeCoding\\OPC-projects\\OpcDa_miniHMI\\OpcDaSimpleClient.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.0\\microsoft.net.illink.tasks.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\8.0.0\\microsoft.netcore.app.runtime.win-x86.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\8.0.0\\microsoft.windowsdesktop.app.runtime.win-x86.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x86\\8.0.0\\microsoft.aspnetcore.app.runtime.win-x86.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

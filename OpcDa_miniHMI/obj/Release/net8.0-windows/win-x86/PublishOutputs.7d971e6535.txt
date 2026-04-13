@@ -1,2 +1,0 @@
-C:\projects\OpcDaSimpleClient\publish\OpcDaSimpleClient.pdb
-C:\projects\OpcDaSimpleClient\publish\OpcDaSimpleClient.exe
