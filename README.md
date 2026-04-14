@@ -17,3 +17,5 @@ dotnet run
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o ./publish  
 
 
+OPCWebServer - веб сервер выдающий в браузер значения тегов сохраненные у него в конфиге.
+

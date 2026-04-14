@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "serverUrl": "http://127.0.0.1:8085/api/tags",
+  "pollInterval": 2000,
+  "blocks": [
+    {
+      "id": "block-1",
+      "title": "Основные параметры",
+      "x": 0,
+      "y": 0,
+      "w": 220,
+      "h": 85,
+      "z": 5,
+      "widgets": [
+        {
+          "id": "widget-1",
+          "type": "value",
+          "addr": "numeric.sin.int8",
+          "label": "Скорость",
+          "units": "mm",
+          "addr2": "",
+          "units2": "",
+          "sep": "/"
+        },
+        {
+          "id": "widget-3",
+          "type": "bool",
+          "addr": "storage.bool.reg01",
+          "label": ".",
+          "units": "",
+          "addr2": "",
+          "units2": "",
+          "sep": "/"
+        }
+      ]
+    }
+  ]
+}

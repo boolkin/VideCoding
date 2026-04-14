@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "RKsAUzGu/1J97V0qedHAQSYkEyIbLURDEs4zZrYGeG1FS/hRuqAzz7nSujjVlO0zK5/sXU8D0FCd4Hfhc5a9XA==",
+  "success": true,
+  "projectFilePath": "C:\\projects\\OPCWebServer\\OPCWebServer.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.0\\microsoft.net.illink.tasks.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\8.0.0\\microsoft.netcore.app.runtime.win-x86.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\8.0.0\\microsoft.windowsdesktop.app.runtime.win-x86.8.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x86\\8.0.0\\microsoft.aspnetcore.app.runtime.win-x86.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
