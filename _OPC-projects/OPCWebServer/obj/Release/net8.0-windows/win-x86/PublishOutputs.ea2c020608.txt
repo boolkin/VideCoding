@@ -1,3 +1,0 @@
-C:\git\VibeCoding\_OPC-projects\OPCWebServer\publish\config.json
-C:\git\VibeCoding\_OPC-projects\OPCWebServer\publish\OPCWebServer.pdb
-C:\git\VibeCoding\_OPC-projects\OPCWebServer\publish\OPCWebServer.exe
