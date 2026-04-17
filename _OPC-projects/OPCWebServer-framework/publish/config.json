@@ -1,0 +1,37 @@
+{
+  "OpcSettings": {
+    "AppName": "Graybox",
+    "ServerId": "Graybox.Simulator",
+    "RefreshRateMs": 2000
+  },
+  "WebSettings": {
+    "Enabled": true,
+    "Port": 8085,
+    "StaticFolder": "wwwroot"
+  },
+  "UdpSettings": {
+    "Enabled": true,
+    "RemoteIp": "127.0.0.1",
+    "RemotePort": 3310
+  },
+  "Tags": [
+    {
+      "Id": 1,
+      "Address": "numeric.saw.uint16",
+      "DataType": "float",
+      "Multiplier": 1,
+      "Offset": 0,
+      "Invert": false,
+      "UdpSend": false
+    },
+    {
+      "Id": 2,
+      "Address": "numeric.saw.double",
+      "DataType": "float",
+      "Multiplier": 1,
+      "Offset": 0,
+      "Invert": false,
+      "UdpSend": false
+    }
+  ]
+}

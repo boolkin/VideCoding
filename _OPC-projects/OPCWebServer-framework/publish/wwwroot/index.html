@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АОМ Монитор</title>
+<script src="libs/tw.js"></script>
+<link href="libs/css2.css" rel="stylesheet">
+<link rel="stylesheet" href="libs/all.min.css">
+<link rel="stylesheet" href="libs/styles.css">
+<script>
+tailwind.config = { theme: { extend: { fontFamily: {
+    mono: ['"JetBrains Mono"', 'monospace'],
+    sans: ['"Manrope"', 'sans-serif'],
+}}}};
+</script>
+<style>
+.viewer-block .block-header { cursor: default; }
+.viewer-widget { cursor: default; }
+</style>
+</head>
+<body class="font-sans">
+
+<!-- Тулбар -->
+<header class="toolbar">
+    <div class="flex items-center gap-3">
+        <div class="toolbar-logo">
+            <div class="toolbar-logo-dot"></div>
+            <span class="toolbar-logo-text">OPC Dashboard</span>
+        </div>
+        <div class="poll-status" id="poll-status">
+            <div class="poll-dot" id="poll-dot"></div>
+            <span id="poll-label">не подключено</span>
+        </div>
+    </div>
+    <div class="toolbar-actions">
+        <button class="toolbar-btn" onclick="toggleDataPanel()" title="Панель данных">
+            <i class="fas fa-database"></i> Данные
+        </button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" onclick="toggleTheme()" title="Переключить тему">
+            <i class="fas fa-sun" id="theme-icon"></i>
+        </button>
+        <div class="toolbar-sep"></div>
+        <a href="editor.html" class="toolbar-btn" title="Открыть редактор" style="text-decoration:none;">
+            <i class="fas fa-pen-to-square"></i> Редактор
+        </a>
+    </div>
+</header>
+
+<!-- Дашборд -->
+<main class="dashboard-main">
+    <div id="dashboard-canvas"></div>
+</main>
+
+<datalist id="addr-datalist" style="display:none;"></datalist>
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Панель данных -->
+<div class="data-panel" id="data-panel">
+    <div class="data-panel-toggle" onclick="toggleDataPanel()">
+        <span><i class="fas fa-database" style="margin-right:6px;"></i>Входящие данные OPC</span>
+        <i class="fas fa-chevron-up" id="dp-arrow"></i>
+    </div>
+    <div class="data-panel-content" id="data-panel-content">Нет данных</div>
+</div>
+
+<script src="libs/common.js"></script>
+<script src="libs/viewer.js"></script>
+</body>
+</html>

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\projects\\OPCWebServer\\OPCWebServer.csproj": {}
+    "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\OPCWebServer.csproj": {}
   },
   "projects": {
-    "C:\\projects\\OPCWebServer\\OPCWebServer.csproj": {
+    "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\OPCWebServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\projects\\OPCWebServer\\OPCWebServer.csproj",
+        "projectUniqueName": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\OPCWebServer.csproj",
         "projectName": "OPCWebServer",
-        "projectPath": "C:\\projects\\OPCWebServer\\OPCWebServer.csproj",
+        "projectPath": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\OPCWebServer.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\projects\\OPCWebServer\\obj\\",
+        "outputPath": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"

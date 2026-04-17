@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "RKsAUzGu/1J97V0qedHAQSYkEyIbLURDEs4zZrYGeG1FS/hRuqAzz7nSujjVlO0zK5/sXU8D0FCd4Hfhc5a9XA==",
+  "dgSpecHash": "ANOf7vwEaod33CcGQWIbKj0Ms+2puX1Tff0DlZrsbvzjO0Q93VvOqEmaGQ92gAKYC28zX39RRXlHhfkiJ8dviQ==",
   "success": true,
-  "projectFilePath": "C:\\projects\\OPCWebServer\\OPCWebServer.csproj",
+  "projectFilePath": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\OPCWebServer.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.0\\microsoft.net.illink.tasks.8.0.0.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\8.0.0\\microsoft.netcore.app.runtime.win-x86.8.0.0.nupkg.sha512",

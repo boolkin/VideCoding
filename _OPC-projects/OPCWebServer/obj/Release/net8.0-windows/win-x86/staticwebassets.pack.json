@@ -1,0 +1,89 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\conv.html",
+      "PackagePath": "staticwebassets\\conv.html"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\dashboard.json",
+      "PackagePath": "staticwebassets\\dashboard.json"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\editor.html",
+      "PackagePath": "staticwebassets\\editor.html"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\all.min.css",
+      "PackagePath": "staticwebassets\\libs\\all.min.css"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\common.js",
+      "PackagePath": "staticwebassets\\libs\\common.js"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\css2.css",
+      "PackagePath": "staticwebassets\\libs\\css2.css"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\editor.js",
+      "PackagePath": "staticwebassets\\libs\\editor.js"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\styles.css",
+      "PackagePath": "staticwebassets\\libs\\styles.css"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\tw.js",
+      "PackagePath": "staticwebassets\\libs\\tw.js"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\libs\\viewer.js",
+      "PackagePath": "staticwebassets\\libs\\viewer.js"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\fa-solid-900.woff2",
+      "PackagePath": "staticwebassets\\webfonts\\fa-solid-900.woff2"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD7OwE.woff2",
+      "PackagePath": "staticwebassets\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD7OwE.woff2"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD_OwG_TA (1).woff2",
+      "PackagePath": "staticwebassets\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD_OwG_TA (1).woff2"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD_OwG_TA.woff2",
+      "PackagePath": "staticwebassets\\webfonts\\tDbV2o-flEEny0FZhsfKu5WU4xD_OwG_TA.woff2"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\xn7gYHE41ni1AdIRggOxSuXd.woff2",
+      "PackagePath": "staticwebassets\\webfonts\\xn7gYHE41ni1AdIRggOxSuXd.woff2"
+    },
+    {
+      "Id": "C:\\git\\VibeCoding\\_OPC-projects\\OPCWebServer\\wwwroot\\webfonts\\xn7gYHE41ni1AdIRggexSg.woff2",
+      "PackagePath": "staticwebassets\\webfonts\\xn7gYHE41ni1AdIRggexSg.woff2"
+    },
+    {
+      "Id": "obj\\Release\\net8.0-windows\\win-x86\\staticwebassets\\msbuild.OPCWebServer.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0-windows\\win-x86\\staticwebassets\\msbuild.build.OPCWebServer.props",
+      "PackagePath": "build\\OPCWebServer.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0-windows\\win-x86\\staticwebassets\\msbuild.buildMultiTargeting.OPCWebServer.props",
+      "PackagePath": "buildMultiTargeting\\OPCWebServer.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0-windows\\win-x86\\staticwebassets\\msbuild.buildTransitive.OPCWebServer.props",
+      "PackagePath": "buildTransitive\\OPCWebServer.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
