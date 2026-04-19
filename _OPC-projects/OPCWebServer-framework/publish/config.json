@@ -1,6 +1,6 @@
 {
   "OpcSettings": {
-    "AppName": "Graybox",
+    "AppName": "OPC Server",
     "ServerId": "Graybox.Simulator",
     "RefreshRateMs": 2000
   },
@@ -17,8 +17,8 @@
   "Tags": [
     {
       "Id": 1,
-      "Address": "numeric.saw.uint16",
-      "DataType": "float",
+      "Address": "storage.bool.reg01",
+      "DataType": "bool",
       "Multiplier": 1,
       "Offset": 0,
       "Invert": false,
@@ -26,7 +26,34 @@
     },
     {
       "Id": 2,
-      "Address": "numeric.saw.double",
+      "Address": "time.current",
+      "DataType": "text",
+      "Multiplier": 1,
+      "Offset": 0,
+      "Invert": false,
+      "UdpSend": false
+    },
+    {
+      "Id": 3,
+      "Address": "textual.weekday",
+      "DataType": "text",
+      "Multiplier": 1,
+      "Offset": 0,
+      "Invert": false,
+      "UdpSend": false
+    },
+    {
+      "Id": 4,
+      "Address": "numeric.random.float",
+      "DataType": "float",
+      "Multiplier": 1,
+      "Offset": 0,
+      "Invert": false,
+      "UdpSend": false
+    },
+    {
+      "Id": 5,
+      "Address": "numeric.sin.int8",
       "DataType": "float",
       "Multiplier": 1,
       "Offset": 0,

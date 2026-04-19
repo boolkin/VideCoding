@@ -192,6 +192,7 @@ body {
 /* ======================== ОСНОВНАЯ ОБЛАСТЬ ======================== */
 .dashboard-main {
     overflow: auto;
+    overflow-x: scroll;
     height: calc(100vh - 48px);
 }
 
@@ -548,6 +549,23 @@ body {
 }
 
 #import-input { display: none; }
+
+/* ======================== ИНДИКАТОР BOOL ======================== */
+.bool-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.bool-on {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--glow-accent);
+}
+.bool-off {
+    background: var(--danger);
+    box-shadow: 0 0 6px var(--glow-danger);
+}
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

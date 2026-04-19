@@ -52,6 +52,11 @@ namespace OPCWebServer
             var panelTop = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 45, Padding = new Padding(5), BackColor = Color.FromArgb(235, 235, 235) };
             var btnLoad = new Button { Text = "Импорт", Width = 90, Height = 30 };
             var btnSave = new Button { Text = "Сохранить", Width = 90, Height = 30 };
+            btnStart = new Button { Text = "СТАРТ", Width = 90, Height = 30};
+            btnStop = new Button { Text = "СТОП", Width = 90, Height = 30 };
+
+            btnStart.Click += (s, e) => { if (!isRunning) ToggleServer(); };
+            btnStop.Click += (s, e) => { if (isRunning) ToggleServer(); };
 
             btnSave.Click += (s, e) => { SyncConfigFromUi(); configService.Save(config);  if (isRunning) ToggleServer();  MessageBox.Show("Сохранено"); };
             btnLoad.Click += (s, e) =>
@@ -75,7 +80,7 @@ namespace OPCWebServer
                     }
                 }
             };
-            panelTop.Controls.AddRange(new Control[] { btnLoad, btnSave });
+            panelTop.Controls.AddRange(new Control[] { btnLoad, btnSave, btnStart, btnStop});
 
             var tabs = new TabControl { Dock = DockStyle.Fill };
 
@@ -162,9 +167,8 @@ namespace OPCWebServer
             lbAvailableTags.DoubleClick += (s, e) => { if (lbAvailableTags.SelectedItem != null) tagManager.AddTagToConfig(lbAvailableTags.SelectedItem.ToString()!); };
 
             // --- ВКЛАДКА ЗАПУСК ---
-            var tabRun = new TabPage("Запуск");
-            btnStart = new Button { Text = "СТАРТ", Location = new Point(30, 30), Size = new Size(100, 40) };
-            btnStop = new Button { Text = "СТОП", Location = new Point(30, 80), Size = new Size(100, 40) };
+            var tabRun = new TabPage("Диагностика");
+
             txtLog = new TextBox
             {
                 Location = new Point(30, 120),
@@ -174,8 +178,7 @@ namespace OPCWebServer
                 ScrollBars = ScrollBars.Vertical,
                 Font = new Font("Consolas", 9f) // Моноширинный шрифт для JSON
             };
-            btnStart.Click += (s, e) => { if (!isRunning) ToggleServer(); };
-            btnStop.Click += (s, e) => { if (isRunning) ToggleServer(); };
+
 
             var chkEnableLog = new CheckBox
             {
@@ -189,7 +192,7 @@ namespace OPCWebServer
             {
                 isLoggingEnabled = chkEnableLog.Checked;
             };
-            tabRun.Controls.AddRange(new Control[] { btnStart, btnStop, txtLog, chkEnableLog });
+            tabRun.Controls.AddRange(new Control[] { txtLog, chkEnableLog });
 
             btnStartWebOnly = new Button
             {
@@ -227,7 +230,7 @@ namespace OPCWebServer
 
             tabRun.Controls.Add(btnOpenBrowser);
 
-            tabs.TabPages.AddRange(new[] { tabRun, tabSettings, tabTags });
+            tabs.TabPages.AddRange(new[] { tabTags, tabSettings, tabRun });
             this.Controls.Add(tabs);
             this.Controls.Add(panelTop);
 

@@ -34,15 +34,11 @@ tailwind.config = { theme: { extend: { fontFamily: {
         </div>
     </div>
     <div class="toolbar-actions">
-        <button class="toolbar-btn" onclick="toggleDataPanel()" title="Панель данных">
-            <i class="fas fa-database"></i> Данные
-        </button>
-        <div class="toolbar-sep"></div>
         <button class="toolbar-btn" onclick="toggleTheme()" title="Переключить тему">
             <i class="fas fa-sun" id="theme-icon"></i>
         </button>
         <div class="toolbar-sep"></div>
-        <a href="editor.html" class="toolbar-btn" title="Открыть редактор" style="text-decoration:none;">
+        <a href="#" onclick="openEditor(event)" class="toolbar-btn" title="Открыть редактор" style="text-decoration:none;">
             <i class="fas fa-pen-to-square"></i> Редактор
         </a>
     </div>
@@ -56,16 +52,18 @@ tailwind.config = { theme: { extend: { fontFamily: {
 <datalist id="addr-datalist" style="display:none;"></datalist>
 <div class="toast-container" id="toast-container"></div>
 
-<!-- Панель данных -->
-<div class="data-panel" id="data-panel">
-    <div class="data-panel-toggle" onclick="toggleDataPanel()">
-        <span><i class="fas fa-database" style="margin-right:6px;"></i>Входящие данные OPC</span>
-        <i class="fas fa-chevron-up" id="dp-arrow"></i>
-    </div>
-    <div class="data-panel-content" id="data-panel-content">Нет данных</div>
-</div>
-
 <script src="libs/common.js"></script>
 <script src="libs/viewer.js"></script>
+<script>
+function openEditor(e) {
+    e.preventDefault();
+    var pwd = prompt('Введите пароль:');
+    if (pwd === '12345') {
+        window.location.href = 'editor.html';
+    } else if (pwd !== null) {
+        toast('Неверный пароль', 'error');
+    }
+}
+</script>
 </body>
 </html>

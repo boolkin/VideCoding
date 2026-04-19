@@ -73,7 +73,7 @@ function renderBlock(block) {
     el.style.width = block.w + 'px';
     el.style.height = block.h + 'px';
     el.style.zIndex = block.z;
-
+    
     el.innerHTML =
         '<div class="block-header" data-drag-handle>' +
             '<span class="block-title">' + escHtml(block.title) + '</span>' +
@@ -84,7 +84,22 @@ function renderBlock(block) {
         '</div>' +
         '<div class="widgets-container" data-widgets-drop></div>' +
         '<div class="resize-handle" data-resize-handle></div>';
-
+    // Применение пользовательских цветов
+    if (block.bodyColor) {
+        el.style.backgroundColor = block.bodyColor;
+    }
+    var headerEl = el.querySelector('.block-header');
+    if (block.headerColor) {
+        headerEl.style.backgroundColor = block.headerColor;
+        // Автоматический контраст текста в зависимости от цвета заголовка
+        var isLightBg = getContrastYIQ(block.headerColor) === 'dark';
+        var textColor = isLightBg ? 'var(--bg)' : 'var(--fg-dim)';
+        var btnColor = isLightBg ? 'var(--fg)' : 'var(--fg-dim)';
+        headerEl.querySelector('.block-title').style.color = textColor;
+        headerEl.querySelectorAll('.block-actions button').forEach(function(b) {
+            b.style.color = btnColor;
+        });
+    }
     var wc = el.querySelector('[data-widgets-drop]');
     block.widgets.forEach(function(w) { wc.appendChild(renderWidget(block, w)); });
 
@@ -183,14 +198,32 @@ function openBlockModal(blockId) {
     if (!block) return;
     modalBlockId = blockId;
     document.getElementById('bm-title').value = block.title;
+    var hInput = document.getElementById('bm-header-color');
+    var bInput = document.getElementById('bm-body-color');
+    hInput.value = block.headerColor || '#0e1512';
+    bInput.value = block.bodyColor || '#141e19';
+    hInput.dataset.active = block.headerColor ? 'true' : 'false';
+    bInput.dataset.active = block.bodyColor ? 'true' : 'false';
+    hInput.style.opacity = block.headerColor ? '1' : '0.5';
+    bInput.style.opacity = block.bodyColor ? '1' : '0.5';
     openModal('block-modal');
     setTimeout(function() { document.getElementById('bm-title').focus(); }, 100);
+}
+
+function resetBlockColor(type) {
+    var input = document.getElementById('bm-' + type + '-color');
+    input.dataset.active = 'false';
+    input.style.opacity = '0.5';
 }
 
 function saveBlockModal() {
     var block = state.blocks.find(function(b) { return b.id === modalBlockId; });
     if (!block) return;
     block.title = document.getElementById('bm-title').value.trim() || 'Без названия';
+    var hInput = document.getElementById('bm-header-color');
+    var bInput = document.getElementById('bm-body-color');
+    block.headerColor = hInput.dataset.active === 'true' ? hInput.value : null;
+    block.bodyColor = bInput.dataset.active === 'true' ? bInput.value : null;
     renderBlock(block);
     closeModal('block-modal');
 }
@@ -410,7 +443,15 @@ function openUrlModal() {
     openModal('url-modal');
     setTimeout(function() { document.getElementById('um-url').focus(); }, 100);
 }
-
+function openDataModal() {
+    var el = document.getElementById('data-modal-content');
+    if (state.opcData.length === 0) {
+        el.textContent = 'Нет данных';
+    } else {
+        el.textContent = JSON.stringify(state.opcData, null, 2);
+    }
+    openModal('data-modal');
+}
 function startUrlPolling() {
     var url = document.getElementById('um-url').value.trim();
     var interval = parseInt(document.getElementById('um-interval').value) || 1000;
@@ -452,6 +493,8 @@ function buildConfig() {
         blocks: state.blocks.map(function(b) {
             return {
                 id: b.id, title: b.title,
+                headerColor: b.headerColor || null,
+                bodyColor: b.bodyColor || null,
                 x: b.x, y: b.y, w: b.w, h: b.h, z: b.z,
                 widgets: b.widgets.map(function(w) {
                     return {
@@ -485,7 +528,7 @@ function deployDashboard() {
 
     fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify(buildConfig(), null, 2),
     })
         .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
@@ -526,6 +569,8 @@ function importDashboard(config) {
     config.blocks.forEach(function(b) {
         var block = {
             id: b.id, title: b.title || 'Без названия',
+            headerColor: b.headerColor || null,
+            bodyColor: b.bodyColor || null,
             x: snap(b.x != null ? b.x : 40), y: snap(b.y != null ? b.y : 40),
             w: snap(b.w || 320), h: snap(b.h || 200), z: b.z || 1,
             widgets: (b.widgets || []).map(function(w) {

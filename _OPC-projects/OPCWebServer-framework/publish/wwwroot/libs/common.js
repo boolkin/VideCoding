@@ -99,7 +99,11 @@ function updateWidgetContent(el, widget) {
         }
         case 'bool': {
             var b = val === true;
-            html += '<div class="widget-value">' + (b ? 'ON' : 'OFF') + '</div>';
+            var dotClass = b ? 'bool-on' : 'bool-off';
+            html += '<div class="widget-value" style="display:flex;align-items:center;justify-content:center;gap:5px;">' +
+                    '<span class="bool-indicator ' + dotClass + '"></span>' +
+                    '<span>' + (b ? 'ON' : 'OFF') + '</span>' +
+                    '</div>';
             break;
         }
         case 'text': {
@@ -204,4 +208,16 @@ function createPollTick(url, onTick) {
             .then(function(data) { processOpcData(data); if (onTick) onTick(); })
             .catch(function(err) { setPollStatus('error', 'ошибка: ' + err.message); });
     };
+}
+
+// ============================================================
+// УТИЛИТЫ ЦВЕТА
+// ============================================================
+function getContrastYIQ(hexcolor) {
+    hexcolor = hexcolor.replace("#", "");
+    var r = parseInt(hexcolor.substr(0, 2), 16);
+    var g = parseInt(hexcolor.substr(2, 2), 16);
+    var b = parseInt(hexcolor.substr(4, 2), 16);
+    var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? 'dark' : 'light';
 }

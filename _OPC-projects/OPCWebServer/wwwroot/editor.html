@@ -47,6 +47,9 @@ tailwind.config = { theme: { extend: { fontFamily: {
         <button class="toolbar-btn" id="url-btn" onclick="openUrlModal()" title="Источник данных">
             <i class="fas fa-plug"></i> Источник
         </button>
+        <button class="toolbar-btn" onclick="openDataModal()" title="Панель данных">
+            <i class="fas fa-database"></i> Данные
+        </button>
         <div class="toolbar-sep"></div>
         <button class="toolbar-btn" onclick="toggleTheme()" title="Переключить тему">
             <i class="fas fa-sun" id="theme-icon"></i>
@@ -71,6 +74,22 @@ tailwind.config = { theme: { extend: { fontFamily: {
         <div class="modal-field">
             <label>Заголовок</label>
             <input type="text" id="bm-title" placeholder="Введите заголовок">
+        </div>
+                <div class="modal-field" style="display:flex; gap:12px;">
+            <div style="flex:1;">
+                <label>Цвет заголовка</label>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <input type="color" id="bm-header-color" value="#0e1512" data-active="false" style="width:40px; height:36px; padding:2px; cursor:pointer; border-radius:4px; border:1px solid var(--border); opacity:0.5;" onchange="this.dataset.active='true'; this.style.opacity='1';">
+                    <button type="button" class="btn-secondary" onclick="resetBlockColor('header')" style="padding:8px; font-size:11px; flex:1;">Сброс</button>
+                </div>
+            </div>
+            <div style="flex:1;">
+                <label>Цвет фона блока</label>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <input type="color" id="bm-body-color" value="#141e19" data-active="false" style="width:40px; height:36px; padding:2px; cursor:pointer; border-radius:4px; border:1px solid var(--border); opacity:0.5;" onchange="this.dataset.active='true'; this.style.opacity='1';">
+                    <button type="button" class="btn-secondary" onclick="resetBlockColor('body')" style="padding:8px; font-size:11px; flex:1;">Сброс</button>
+                </div>
+            </div>
         </div>
         <div class="modal-btns">
             <button class="btn-danger" onclick="deleteBlockFromModal()">Удалить</button>
@@ -156,14 +175,16 @@ tailwind.config = { theme: { extend: { fontFamily: {
 
 <datalist id="addr-datalist"></datalist>
 <div class="toast-container" id="toast-container"></div>
-
-<!-- Панель данных -->
-<div class="data-panel" id="data-panel">
-    <div class="data-panel-toggle" onclick="toggleDataPanel()">
-        <span><i class="fas fa-database" style="margin-right:6px;"></i>Входящие данные OPC</span>
-        <i class="fas fa-chevron-up" id="dp-arrow"></i>
+<!-- Модалка: Данные OPC -->
+<div class="modal-overlay" id="data-modal">
+    <div class="modal-box" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-title">Входящие данные OPC</div>
+        <div id="data-modal-content" class="data-panel-content" style="flex: 1; overflow-y: auto; background: var(--surface); border-radius: 4px; padding: 12px;">Нет данных</div>
+        <div class="modal-btns">
+            <div class="flex-1"></div>
+            <button class="btn-secondary" onclick="closeModal('data-modal')">Закрыть</button>
+        </div>
     </div>
-    <div class="data-panel-content" id="data-panel-content">Нет данных</div>
 </div>
 
 <script src="libs/common.js"></script>

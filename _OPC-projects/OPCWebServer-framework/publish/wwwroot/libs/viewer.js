@@ -15,13 +15,23 @@ function renderBlock(block) {
     el.style.width = block.w + 'px';
     el.style.height = block.h + 'px';
     el.style.zIndex = block.z;
-
+   
     el.innerHTML =
         '<div class="block-header">' +
             '<span class="block-title">' + escHtml(block.title) + '</span>' +
         '</div>' +
         '<div class="widgets-container"></div>';
-
+ // Применение пользовательских цветов
+    if (block.bodyColor) {
+        el.style.backgroundColor = block.bodyColor;
+    }
+    var headerEl = el.querySelector('.block-header');
+    if (block.headerColor) {
+        headerEl.style.backgroundColor = block.headerColor;
+        var isLightBg = getContrastYIQ(block.headerColor) === 'dark';
+        var textColor = isLightBg ? 'var(--bg)' : 'var(--fg-dim)';
+        headerEl.querySelector('.block-title').style.color = textColor;
+    }
     var wc = el.querySelector('.widgets-container');
     block.widgets.forEach(function(w) { wc.appendChild(renderWidget(w)); });
     canvas.appendChild(el);
@@ -91,6 +101,8 @@ fetch('dashboard.json')
         config.blocks.forEach(function(b) {
             var block = {
                 id: b.id, title: b.title || 'Без названия',
+                headerColor: b.headerColor || null,
+                bodyColor: b.bodyColor || null,
                 x: b.x != null ? b.x : 40,
                 y: b.y != null ? b.y : 40,
                 w: b.w || 320, h: b.h || 200, z: b.z || 1,

@@ -98,7 +98,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>Q662uQmuSS2d82jeJmNqJO9J+wYzE4ON8cwgNRVbB14=</dsig:DigestValue>
+        <dsig:DigestValue>illh4yuDAnsSSoyIfteQIK1ePWVGCmpLP+e1ahiwdFA=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -207,13 +207,13 @@
       <dsig:DigestValue>bDqFzMgnYPvNZx8Zbx6irs/GWN8ooMFbpuN619dF1pM=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="OPCWebServer.exe.config" size="187">
+  <file name="OPCWebServer.exe.config" size="186">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-      <dsig:DigestValue>+CM46OnHRrXZXNLMx7+U3V3iubiYL//d8hGOR13lDhU=</dsig:DigestValue>
+      <dsig:DigestValue>y68q6VsRMwJsWKtjYq8vf7Khhx161YuHvXMTdZgijZs=</dsig:DigestValue>
     </hash>
   </file>
 </asmv1:assembly>
