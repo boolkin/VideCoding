@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSQLiteAPI - Панель управления</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; color: #333; }
+        .container { margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        tr:hover { background-color: #f1f1f1; cursor: pointer; }
+        .status { margin-top: 20px; font-size: 0.9em; color: #666; }
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <nav style="margin-bottom: 20px;">
+        <a href="/">🏠 Главная</a> <span id="nav-path"></span>
+    </nav>
+    <h1 id="title">Загрузка...</h1>
+    <!-- Кнопка над таблицей -->
+<div id="toolbar" style="display:none; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 4px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <button onclick="openAddModal()" class="btn-refresh" style="background:#007bff">+ Новая запись</button>
+    
+    <!-- Поле поиска -->
+    <input type="text" id="filterSearch" placeholder="Поиск по всей таблице..." 
+           oninput="debounceSearch()" 
+           style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+<button onclick="toggleConsole()" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">⌨️ SQL Консоль</button>
+
+    <div style="margin-left: auto; display: flex; gap: 10px; align-items: center; display: inline;">
+        <span>Показывать:</span>
+        <select id="filterLimit" onchange="router()">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+        <select id="filterOrder" onchange="router()">
+            <option value="DESC">Новые</option>
+            <option value="ASC">Старые</option>
+        </select>
+    </div>
+</div>
+
+
+
+<!-- Модальное окно -->
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:600px; margin:50px auto; padding:20px; border-radius:8px; max-height:80vh; overflow-y:auto;">
+        <h3>Добавить запись в <span id="modalTitle"></span></h3>
+        <form id="addForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></form>
+        <div style="margin-top:20px; text-align:right;">
+            <button onclick="closeModal()">Отмена</button>
+            <button onclick="saveRecord()" style="background:#28a745; color:white; padding:8px 15px; border:none; border-radius:4px;">Сохранить</button>
+        </div>
+    </div>
+</div>
+<div id="sqlConsole" style="display:none; margin-bottom: 15px; background: #333; padding: 15px; border-radius: 4px;">
+    <textarea id="sqlInput" style="width:90%; height:80px; background:#1e1e1e; color:#dcdcdc; font-family:monospace; padding:10px; border:none;" placeholder="SELECT * FROM table..."></textarea>
+    
+    <div style="margin-top:10px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+        <button onclick="wizardCreateDatabase()" style="background:#4a4a4a; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">🆕 Новая база</button>
+        <button onclick="wizardCreateTable()" style="background:#6c757d; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">🆕 Новая таблица</button>
+        <button onclick="wizardAddColumn()" style="background:#6c757d; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">➕ Добавить колонку</button>
+        <button onclick="wizardDropTable()" style="background:#dc3545; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">🗑️ Удалить таблицу</button>
+        <button onclick="runQuery()" style="background:#17a2b8; color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;">Выполнить (Ctrl+Enter)</button>
+    </div>
+
+</div>
+
+
+    <table id="mainTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const title = document.getElementById('title');
+    const head = document.getElementById('tableHead');
+    const body = document.getElementById('tableBody');
+    const navPath = document.getElementById('nav-path');
+let currentSchema = [];
+let searchTimer;
+let isEditMode = false;
+let currentEditKey = { col: '', val: '' };
+
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => router(), 500); // Поиск начнется через 0.5 сек после остановки ввода
+}
+
+async function openAddModal() {
+    const params = new URLSearchParams(window.location.search);
+    const db = params.get('db');
+    const table = params.get('table');
+    
+    const res = await fetch(`/api/databases/${db}/tables/${table}/schema`);
+    currentSchema = await res.json();
+    
+    const form = document.getElementById('addForm');
+    document.getElementById('modalTitle').innerText = table;
+    
+    form.innerHTML = currentSchema.map(col => `
+        <div style="display:flex; flex-direction:column">
+            <label style="font-size:12px; color:#666">${col.name} ${col.pk ? '🔑' : ''}</label>
+            <input type="${col.type.includes('INT') ? 'number' : 'text'}" 
+                   name="${col.name}" 
+                   ${col.pk ? 'placeholder="AUTOINCREMENT" disabled' : ''} 
+                   style="padding:5px; border:1px solid #ccc">
+        </div>
+    `).join('');
+    
+    document.getElementById('modal').style.display = 'block';
+}
+
+async function saveRecord() {
+    const params = new URLSearchParams(window.location.search);
+    const db = params.get('db');
+    const table = params.get('table');
+    const formData = new FormData(document.getElementById('addForm'));
+    const data = {};
+    formData.forEach((val, key) => { data[key] = val; });
+
+    const url = isEditMode 
+        ? `/api/databases/${db}/tables/${table}/${currentEditKey.col}/${currentEditKey.val}`
+        : `/api/databases/${db}/tables/${table}`;
+
+    const res = await fetch(url, {
+        method: isEditMode ? 'PUT' : 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if(res.ok) {
+        closeModal();
+        isEditMode = false;
+        router();
+    } else {
+        alert("Ошибка при сохранении");
+    }
+}
+function closeModal() { 
+    document.getElementById('modal').style.display = 'none'; 
+    isEditMode = false;
+}
+// В функции renderTableData добавьте:
+document.getElementById('toolbar').style.display = 'block';
+
+    async function router() {
+        const params = new URLSearchParams(window.location.search);
+        const db = params.get('db');
+        const table = params.get('table');
+
+        // Очистка
+        head.innerHTML = '';
+        body.innerHTML = '';
+        navPath.innerHTML = '';
+
+        if (db && table) {
+            renderTableData(db, table);
+        } else if (db) {
+            renderTablesList(db);
+        } else {
+            renderDbList();
+        }
+    }
+
+    // 1. Список баз данных
+    async function renderDbList() {
+        title.innerText = "Выберите базу данных";
+        const res = await fetch('/api/databases');
+        const dbs = await res.json();
+        
+        head.innerHTML = `<tr><th>Имя файла</th><th>Размер</th></tr>`;
+        body.innerHTML = dbs.map(d => `
+            <tr onclick="location.href='?db=${d.name}'">
+                <td><b>${d.fileName}</b></td>
+                <td>${(d.size/1024).toFixed(2)} KB</td>
+            </tr>
+        `).join('');
+    }
+
+    // 2. Список таблиц
+    async function renderTablesList(db) {
+        title.innerText = `Таблицы в ${db}`;
+        navPath.innerHTML = ` > ${db}`;
+        const res = await fetch(`/api/databases/${db}/tables`);
+        const tables = await res.json();
+
+        head.innerHTML = `<tr><th>Название таблицы</th></tr>`;
+        body.innerHTML = tables.map(t => `
+            <tr onclick="location.href='?db=${db}&table=${t}'">
+                <td><b>${t}</b></td>
+            </tr>
+        `).join('');
+    }
+
+    // 3. Данные конкретной таблицы
+    async function renderTableData(db, table) {
+    const limit = document.getElementById('filterLimit').value;
+    const order = document.getElementById('filterOrder').value;
+    const search = document.getElementById('filterSearch').value;
+
+    // 1. Получаем схему таблицы, чтобы точно знать Primary Key
+    const schemaRes = await fetch(`/api/databases/${db}/tables/${table}/schema`);
+    if (!schemaRes.ok) return alert("Ошибка при получении схемы таблицы");
+    
+    const schema = await schemaRes.json();
+    currentSchema = schema; // сохраняем глобально для модалки
+
+    // Ищем PK, если его нет — используем скрытый rowid
+    const pkField = schema.find(c => c.pk);
+    const pkColumn = pkField ? pkField.name : 'rowid';
+
+    // 2. Получаем данные с учетом фильтров и поиска
+    const res = await fetch(`/api/databases/${db}/tables/${table}?limit=${limit}&order=${order}&search=${encodeURIComponent(search)}`);
+    const data = await res.json();
+    
+    // Обновляем заголовок и путь
+    title.innerText = `Данные: ${table}`;
+    navPath.innerHTML = ` > <a href="?db=${db}">${db}</a> > ${table}`;
+    document.getElementById('toolbar').style.display = 'flex';
+
+    // Если данных нет
+    if (!data || data.length === 0) {
+        head.innerHTML = '';
+        body.innerHTML = '<tr><td colspan="100" style="text-align:center; padding:20px;">Нет данных или ничего не найдено</td></tr>';
+        return;
+    }
+
+    // Формируем заголовки колонок
+    const columns = Object.keys(data[0]);
+    head.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')} <th style="width:100px">Действия</th></tr>`;
+    
+    // Формируем строки
+    body.innerHTML = data.map(row => {
+        // Подготовка JSON строки для атрибута onclick (экранируем кавычки)
+        const safeJson = JSON.stringify(row).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        // Кнопка редактирования
+        const editBtn = `<button onclick="openEditModal('${db}', '${table}', ${safeJson})" 
+                        style="cursor:pointer; border:none; background:none; font-size:1.2em;" title="Изменить">✏️</button>`;
+        
+        // Кнопка удаления (используем значение из колонки PK)
+        const deleteBtn = `<button onclick="deleteRecord('${db}', '${table}', '${pkColumn}', '${row[pkColumn]}')" 
+                          style="color:red; cursor:pointer; border:none; background:none; font-size:1.2em;" title="Удалить">🗑️</button>`;
+
+        return `
+            <tr>
+                ${columns.map(col => {
+                    const val = row[col];
+                    const displayVal = (val === null || val === undefined) ? '<i style="color:#ccc">null</i>' : val;
+                    return `<td>${displayVal}</td>`;
+                }).join('')}
+                <td style="text-align:center; white-space:nowrap;">${editBtn} ${deleteBtn}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+    // Функция для вызова API удаления
+    async function deleteRecord(db, table, keyCol, keyVal) {
+        if (!confirm(`Удалить запись с ${keyCol} = ${keyVal}?`)) return;
+
+        const res = await fetch(`/api/databases/${db}/tables/${table}/${keyCol}/${keyVal}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            router(); // Перерисовываем таблицу
+        } else {
+            alert("Ошибка при удалении. Возможно, есть связанные данные в других таблицах.");
+        }
+    }
+
+    async function openEditModal(db, table, rowData) {
+        isEditMode = true;
+        await openAddModal(); // Открываем ту же форму
+        
+        title.innerText = "Редактирование записи";
+        const form = document.getElementById('addForm');
+        const params = new URLSearchParams(window.location.search);
+        
+        // Находим PK в схеме
+        const pkField = currentSchema.find(c => c.pk);
+        currentEditKey = { col: pkField.name, val: rowData[pkField.name] };
+
+        // Заполняем поля данными из строки
+        currentSchema.forEach(col => {
+            const input = form.querySelector(`[name="${col.name}"]`);
+            if (input) input.value = rowData[col.name] || '';
+        });
+        
+        document.getElementById('modal').style.display = 'block';
+    }
+function toggleConsole() {
+    const consoleDiv = document.getElementById('sqlConsole');
+    consoleDiv.style.display = consoleDiv.style.display === 'none' ? 'block' : 'none';
+}
+
+async function runQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const db = params.get('db');
+    const sql = document.getElementById('sqlInput').value;
+
+    if (!db) return alert("Сначала выберите базу данных");
+
+    const res = await fetch(`/api/databases/${db}/query`, {
+        method: 'POST',
+        body: sql
+    });
+
+    // Если это команда изменения (CREATE, ALTER, INSERT, UPDATE, DELETE)
+    if (res.ok) {
+        const text = await res.text();
+        let data = [];
+        try { data = JSON.parse(text); } catch(e) { }
+
+        if (data.length > 0) {
+            renderRawData(data);
+        } else {
+            alert("Команда выполнена успешно");
+            router(); // Перезагружаем интерфейс, чтобы увидеть новую таблицу или колонку
+        }
+    } else {
+        const err = await res.json();
+        alert("Ошибка SQL: " + (err.error || "Неизвестная ошибка"));
+    }
+}
+
+
+// Вспомогательная функция для отрисовки любых данных без привязки к таблице
+function renderRawData(data) {
+    if (data.length === 0) {
+        body.innerHTML = '<tr><td colspan="100">Запрос выполнен успешно, результат пуст</td></tr>';
+        return;
+    }
+    const columns = Object.keys(data[0]);
+    head.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+    body.innerHTML = data.map(row => `
+        <tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>
+    `).join('');
+}
+async function renderTablesList(db) {
+    title.innerText = `Таблицы в ${db}`;
+    navPath.innerHTML = ` > ${db}`;
+    
+    const res = await fetch(`/api/databases/${db}/tables`);
+    const tables = await res.json();
+
+    head.innerHTML = `<tr><th>Название таблицы</th></tr>`;
+    // Вставляем кнопку перед списком
+    body.innerHTML = tables.map(t => `
+        <tr onclick="location.href='?db=${db}&table=${t}'">
+            <td><b>${t}</b></td>
+        </tr>
+    `).join('');
+}
+
+// Помощник для генерации SQL создания таблицы
+function wizardCreateTable() {
+    const name = prompt("Название новой таблицы:");
+    if (!name) return;
+    
+    // Подставляем заготовку в консоль
+    const sql = `CREATE TABLE "${name}" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT\n);`;
+    document.getElementById('sqlInput').value = sql;
+    document.getElementById('sqlConsole').style.display = 'block'; // разворачиваем если скрыта
+}
+
+// Помощник для добавления колонки
+async function wizardAddColumn() {
+    const params = new URLSearchParams(window.location.search);
+    const db = params.get('db');
+    const table = params.get('table');
+
+    if (!table) return alert("Сначала откройте конкретную таблицу!");
+
+    const colName = prompt("Название новой колонки:");
+    if (!colName) return;
+
+    const colType = prompt("Тип данных (TEXT, INTEGER, REAL, BLOB):", "TEXT");
+    if (!colType) return;
+
+    const sql = `ALTER TABLE "${table}" ADD COLUMN "${colName}" ${colType.toUpperCase()};`;
+    document.getElementById('sqlInput').value = sql;
+    document.getElementById('sqlConsole').style.display = 'block';
+}
+// Мастер создания новой БАЗЫ (файла)
+async function wizardCreateDatabase() {
+    const name = prompt("Введите имя для нового файла базы данных (без .db):");
+    if (!name) return;
+
+    const res = await fetch('/api/databases/create-db', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ dbName: name })
+    });
+
+    if (res.ok) {
+        alert("База данных создана");
+        location.href = '/'; // Переходим на главную, чтобы увидеть новый файл
+    } else {
+        alert("Ошибка при создании базы");
+    }
+}
+
+// Мастер УДАЛЕНИЯ ТАБЛИЦЫ
+function wizardDropTable() {
+    const params = new URLSearchParams(window.location.search);
+    const table = params.get('table');
+    const db = params.get('db');
+
+    if (!db) return alert("Сначала выберите базу данных");
+
+    const targetTable = table || prompt("Введите название таблицы для удаления:");
+    if (!targetTable) return;
+
+    if (confirm(`ВНИМАНИЕ! Вы действительно хотите ПОЛНОСТЬЮ УДАЛИТЬ таблицу "${targetTable}" со всеми данными?`)) {
+        const sql = `DROP TABLE "${targetTable}";`;
+        document.getElementById('sqlInput').value = sql;
+        document.getElementById('sqlConsole').style.display = 'block';
+        // Здесь мы не выполняем сразу, даем пользователю нажать "Выполнить" для безопасности
+    }
+}
+
+
+// Добавим горячие клавиши для удобства
+document.getElementById('sqlInput')?.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') runQuery();
+});
+
+    // Инициализация при загрузке
+    window.onpopstate = router; // Чтобы работала кнопка "Назад" в браузере
+    router();
+</script>
+
+
+</body>
+</html>
