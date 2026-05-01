@@ -179,7 +179,7 @@ class Program
             schema = dataStore.SchemaInfo 
         }));
 
-        // 2. Поиск
+                // 2. Поиск
         app.MapGet("/api/search", (string q, string? fields, string? db, string? table, int? limit) =>
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -189,57 +189,44 @@ class Program
 
             var queryLower = q.ToLowerInvariant();
 
-            // === НОВАЯ ЛОГИКА: Парсинг скобок ===
-            
-            // 1. Извлекаем группы для ИЛИ (то что внутри скобок)
-            // Регулярное выражение ищет текст внутри скобок, не содержащий других скобок
+            // === Логика парсинга (И / ИЛИ) ===
             var orGroups = new List<string[]>();
             var matches = System.Text.RegularExpressions.Regex.Matches(queryLower, @"\(([^)]+)\)");
             
             foreach (System.Text.RegularExpressions.Match m in matches)
             {
                 string groupContent = m.Groups[1].Value;
-                // Разбиваем содержимое скобок по пробелам — это варианты ИЛИ
                 var terms = groupContent.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (terms.Length > 0) 
-                {
-                    orGroups.Add(terms);
-                }
+                if (terms.Length > 0) orGroups.Add(terms);
             }
 
-            // 2. Извлекаем термины для И (все, что вне скобок)
-            // Заменяем все скобки с содержимым на пробелы
             string andQueryPart = System.Text.RegularExpressions.Regex.Replace(queryLower, @"\([^)]+\)", " ");
             var andTerms = andQueryPart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-            // ======================================
+            // =================================
 
             IEnumerable<MemoryRecord> queryable = dataStore.AllRecords;
 
-            // Фильтр по БД
+            // Фильтры по БД и Таблицам
             if (!string.IsNullOrWhiteSpace(db))
             {
                 var dbList = new HashSet<string>(db.Split(','), StringComparer.OrdinalIgnoreCase);
                 queryable = queryable.Where(r => dbList.Contains(r.DbAlias));
             }
 
-            // Фильтр по Таблицам
             if (!string.IsNullOrWhiteSpace(table))
             {
                 var tableList = new HashSet<string>(table.Split(','), StringComparer.OrdinalIgnoreCase);
                 queryable = queryable.Where(r => tableList.Contains(r.TableName));
             }
 
-            // Основной поиск с комбинированной логикой
+            // Фильтрация поисковым запросу
             var filteredList = queryable
                 .AsParallel()
                 .Where(r => 
                 {
-                    // Проверяем все обязательные термины (И)
                     bool andMatch = andTerms.All(term => r.SearchableText.Contains(term));
                     if (!andMatch) return false;
 
-                    // Проверяем все группы ИЛИ (хотя бы одно совпадение в каждой группе)
                     bool orMatch = orGroups.All(group => group.Any(term => r.SearchableText.Contains(term)));
                     return orMatch;
                 })
@@ -249,7 +236,15 @@ class Program
 
             if (fields == null)
             {
-                // Режим Разведки
+                // --- Режим Разведки ---
+                
+                // В режиме разведки лимиты обычно не применяются так жестко, 
+                // но оставим общую логику безопасности от перегрузки ответа.
+                // Если записей очень много, мы просто не показываем распределение по ним,
+                // а предлагаем уточнить запрос. Но для простоты вернем все группы, 
+                // так как разница в весе между количеством групп и количеством записей огромна.
+                // (Если вы хотите ограничить разведку, можно добавить логику здесь).
+
                 var distribution = filteredList
                     .GroupBy(r => $"{r.DbAlias}:{r.TableName}")
                     .Select(g => new { location = g.Key, count = g.Count() })
@@ -263,26 +258,62 @@ class Program
             }
             else
             {
-                // Режим Данных
-                int effectiveLimit = limit ?? config.Limits.MaxSearchLimit; 
-                bool isLimitZero = effectiveLimit == 0;
-                
-                // Логика лимита
-                if (!isLimitZero && totalFound > effectiveLimit)
+                // --- Режим Данных ---
+
+                IEnumerable<MemoryRecord> recordsToReturnList;
+                bool hasMore = false;
+                bool isUserLimitSet = limit.HasValue;
+                int effectiveLimit = 0;
+
+                // Определяем логику ограничения
+                if (!isUserLimitSet)
                 {
-                    var limitResult = new 
-                    { 
-                        query = q, 
-                        count = totalFound,
-                        hasMore = true,
-                        items = Array.Empty<object>(),
-                        message = $"Найдено {totalFound} записей. Это превышает лимит ({effectiveLimit}). Пожалуйста, уточните параметры поиска (db, table) или увеличьте лимит."
-                    };
-                    return Results.Ok(limitResult);
+                    // 1. Лимит НЕ указан пользователем -> используем глобальный из конфига
+                    effectiveLimit = config.Limits.MaxRecordsToReturn;
+
+                    if (totalFound > effectiveLimit)
+                    {
+                        // Превышен глобальный лимит -> ошибка/предупреждение
+                        return Results.Ok(new 
+                        { 
+                            query = q, 
+                            count = totalFound,
+                            hasMore = true,
+                            items = Array.Empty<object>(),
+                            message = $"Найдено {totalFound} записей. Это превышает лимит ({effectiveLimit}). Пожалуйста, уточните параметры поиска (db, table) или укажите параметр limit."
+                        });
+                    }
+                    else
+                    {
+                        // В пределах лимита -> берем все
+                        recordsToReturnList = filteredList;
+                    }
+                }
+                else
+                {
+                    // 2. Лимит УКАЗАН пользователем -> он имеет приоритет
+                    effectiveLimit = limit.Value;
+
+                    if (effectiveLimit == 0)
+                    {
+                        // limit=0 -> вернуть все
+                        recordsToReturnList = filteredList;
+                        hasMore = false;
+                    }
+                    else
+                    {
+                        // limit > 0 -> вернуть последние N записей
+                        // Если totalFound (например 8) > effectiveLimit (например 5), берем 5 последних.
+                        // Если totalFound < effectiveLimit, TakeLast вернет просто все.
+                        recordsToReturnList = filteredList.TakeLast(effectiveLimit);
+                        
+                        // hasMore должен быть true, если мы что-то отрезали (и лимит не 0)
+                        hasMore = (totalFound > effectiveLimit);
+                    }
                 }
 
                 // Формирование ответа
-                var recordsToReturn = filteredList.Select(r => 
+                var recordsToReturn = recordsToReturnList.Select(r => 
                 {
                     object dataContent;
 
@@ -323,8 +354,8 @@ class Program
 
                 var resultObj = new { 
                     query = q, 
-                    count = totalFound,
-                    hasMore = false,
+                    count = totalFound, // Общее количество найденных, независимо от обрезки
+                    hasMore = hasMore,
                     items = recordsToReturn 
                 };
 
