@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>VNC Dashboard</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f4f4f9; }
+        .card-container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .card { 
+            background: white; border-radius: 8px; padding: 20px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 200px; text-align: center;
+        }
+        .btn { 
+            display: inline-block; background: #007bff; color: white; 
+            text-decoration: none; padding: 10px 20px; border-radius: 4px; margin-top: 10px;
+        }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Доступные VNC сервера</h1>
+    <div id="servers" class="card-container">Загрузка...</div>
+
+    <script>
+        // Запрашиваем список серверов у нашего .NET API
+        fetch('/api/servers')
+            .then(res => res.json())
+            .then(servers => {
+                const container = document.getElementById('servers');
+                container.innerHTML = '';
+                servers.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    
+                    // Формируем URL с параметрами path, autoconnect и password
+                    const vncUrl = `vnc.html?path=vnc/${s.name}&autoconnect=true&password=${encodeURIComponent(s.password)}`;
+                    card.innerHTML = `
+                        <h3>${s.name}</h3>
+                        <a class="btn" href="${vncUrl}">Войти без пароля</a>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+
+    </script>
+</body>
+</html>
