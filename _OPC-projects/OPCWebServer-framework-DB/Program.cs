@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
-using System.Text.Json;
-using System.Threading;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace OPCWebServer
@@ -22,7 +21,7 @@ namespace OPCWebServer
         private TextBox txtLog = null;
 
         private NumericUpDown numRefresh = null, numPort = null, numUdpPort = null;
-        private CheckBox cbWebEnabled = null, cbUdpEnabled = null;
+        private CheckBox cbWebEnabled = null, cbUdpEnabled = null, cbDbEnabled = null;
         private ListBox lbAvailableTags = null;
         private Button btnStart = null, btnStop = null;
 
@@ -30,6 +29,8 @@ namespace OPCWebServer
         private UdpService _udpService;
         private WebService _webService;
         private Button btnStartWebOnly = null;
+        private DatabaseService _dbService;
+        private System.Timers.Timer _cleanupTimer;
 
         public MainForm()
         {
@@ -47,6 +48,7 @@ namespace OPCWebServer
                 if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; this.Hide(); }
             };
             ToggleServer();
+
         }
 
         private void InitInterface()
@@ -77,7 +79,7 @@ namespace OPCWebServer
                         // Обновляем UI, заголовок окна и трей
                         UpdateUiFromConfig();
                         this.Text = $"{config.OpcSettings.AppName} — OPC-Web-Server";
-                        if (isRunning) ToggleServer();
+
                         MessageBox.Show($"Настройки импортированы из {Path.GetFileName(ofd.FileName)}");
                     }
                 }
@@ -105,21 +107,22 @@ namespace OPCWebServer
             grid.Controls.Add(new Label { Text = "UDP Port:" }, 0, 5); numUdpPort = new NumericUpDown { Maximum = 65535 }; grid.Controls.Add(numUdpPort, 1, 5);
             cbWebEnabled = new CheckBox { Text = "Web Server Enabled", AutoSize = true }; grid.Controls.Add(cbWebEnabled, 1, 6);
             cbUdpEnabled = new CheckBox { Text = "UDP Send Enabled", AutoSize = true }; grid.Controls.Add(cbUdpEnabled, 1, 7);
+            cbDbEnabled = new CheckBox { Text = "Database Enabled", AutoSize = true }; grid.Controls.Add(cbDbEnabled, 1, 8);
             tabSettings.Controls.Add(grid);
 
             // --- ВКЛАДКА ТЕГИ ---
             var tabTags = new TabPage("Теги");
             var split = new SplitContainer { Dock = DockStyle.Fill };
-            txtTagFilter = new TextBox { Dock = DockStyle.Top};
+            txtTagFilter = new TextBox { Dock = DockStyle.Top };
             lbAvailableTags = new ListBox { Dock = DockStyle.Fill };
             var btnRefresh = new Button { Text = "Обновить список", Dock = DockStyle.Bottom, Height = 30 };
             btnRefresh.Click += (s, e) =>
             {
-                if (isRunning) ToggleServer();
                 Cursor = Cursors.WaitCursor;
-                try { 
-                    opcService.Connect(txtOpcServer.Text); 
-                    tagManager.RefreshServerTags(opcService); 
+                try
+                {
+                    opcService.Connect(txtOpcServer.Text);
+                    tagManager.RefreshServerTags(opcService);
                     tagManager.FilterSourceList(lbAvailableTags, "");
                     txtLog.AppendText($"{DateTime.Now:HH:mm:ss}: Обнаружено тегов на сервере: {lbAvailableTags.Items.Count}" + Environment.NewLine);
                 }
@@ -238,7 +241,7 @@ namespace OPCWebServer
 
             tabRun.Controls.Add(btnOpenBrowser);
 
-            tabs.TabPages.AddRange(new[] { tabSettings, tabTags, tabRun });
+            tabs.TabPages.AddRange(new[] { tabTags, tabSettings, tabRun });
             this.Controls.Add(tabs);
             this.Controls.Add(panelTop);
 
@@ -255,7 +258,7 @@ namespace OPCWebServer
                 _webService?.Stop();
 
                 // Запускаем веб-сервер, передавая null вместо службы опроса
-                _webService = new WebService(config.WebSettings, null);
+                _webService = new WebService(config.WebSettings, null, null);
                 _webService.Start();
 
                 isRunning = true;
@@ -280,19 +283,30 @@ namespace OPCWebServer
                 {
                     opcService.Connect(config.OpcSettings.ServerId);
                     _udpService = new UdpService(config.UdpSettings);
+                    if (config.DatabaseSettings.Enabled)
+                    {
+                        _dbService = new DatabaseService();
+                        StartCleanupTimer(); // Запускаем таймер
+                        _dbService.CleanupOldData();
+                    }
 
                     // 1. Инициализируем опрос
                     _polling = new DataPollingService(opcService, config.Tags, config.OpcSettings.RefreshRateMs);
 
                     // 2. Инициализируем и запускаем Web-сервер (передаем настройки и ссылку на опрос)
-                    _webService = new WebService(config.WebSettings, _polling);
+                    _webService = new WebService(config.WebSettings, _polling, _dbService);
                     _webService.Start();
 
                     _polling.DataUpdated += () =>
                     {
+
+                        _udpService.Send(_polling.LastBinaryData);
+                        if (config.DatabaseSettings.Enabled && _dbService != null)
+                        {
+                            _dbService.EnqueueData(_polling.LastDbBatch);
+                        }
                         if (txtLog.InvokeRequired)
                         {
-                            _udpService.Send(_polling.LastBinaryData);
                             txtLog.Invoke(new Action(() => UpdateLogView()));
                         }
                         else
@@ -313,14 +327,12 @@ namespace OPCWebServer
             else
             {
                 // Остановка веб-сервера
-                _webService?.Stop();
-                _polling?.Stop();
-                _udpService?.Dispose();
+                _webService?.Stop(); _webService = null;
+                _polling?.Stop(); _polling = null;
+                _udpService?.Dispose(); _udpService = null;
                 opcService.Disconnect();
-
-                _webService = null;
-                _polling = null;
-                _udpService = null;
+                _dbService?.Dispose(); _dbService = null;
+                _cleanupTimer?.Stop(); _cleanupTimer?.Dispose(); _cleanupTimer = null;
             }
             txtLog.AppendText($"{DateTime.Now}: Статус OPC, Web, UDP Запущен? - {isRunning}" + Environment.NewLine);
             trayService.UpdateStatus(isRunning);
@@ -362,7 +374,35 @@ namespace OPCWebServer
                 ((IDisposable)form).Dispose();
             }
         }
+        private void StartCleanupTimer()
+        {
+            txtLog.AppendText($"{DateTime.Now}: таймер старт" + Environment.NewLine);
+            _cleanupTimer?.Stop();
+            _cleanupTimer?.Dispose();
+            _cleanupTimer = new System.Timers.Timer();
+            _cleanupTimer.Interval = 60 * 1000; // раз в минуту
+            _cleanupTimer.AutoReset = true;
+            _cleanupTimer.Elapsed += (s, e) =>
+            {
+                var now = DateTime.Now;
+                if (config.DatabaseSettings.Enabled && _dbService != null)
+                {
+                    var targetTimes = new[] { 8, 20 };
+                    if (targetTimes.Contains(now.Hour) && now.Minute == 0)
+                    {
+                        // Считаем за последние 12 часов (с 07:00 до 19:00)
+                        _dbService?.CalculateAverages (now, 12);
+                        _dbService?.CalculateDowntimes (now, 12);
 
+                        txtLog.Invoke(new Action(() => {
+                            txtLog.AppendText($"{now}: Подбиты итоги за 12 часов и сохранены в базу." + Environment.NewLine);
+                        }));
+                        _dbService.CleanupOldData();
+                    }
+                }
+            };
+            _cleanupTimer.Start();
+        }
         private void SyncConfigFromUi()
         {
             config.OpcSettings.AppName = txtAppName.Text;
@@ -373,6 +413,7 @@ namespace OPCWebServer
             config.UdpSettings.RemoteIp = txtUdpIp.Text;
             config.UdpSettings.RemotePort = (int)numUdpPort.Value;
             config.UdpSettings.Enabled = cbUdpEnabled.Checked;
+            config.DatabaseSettings.Enabled = cbDbEnabled.Checked;
         }
 
         private void UpdateUiFromConfig()
@@ -386,6 +427,7 @@ namespace OPCWebServer
             txtUdpIp.Text = config.UdpSettings.RemoteIp;
             numUdpPort.Value = config.UdpSettings.RemotePort;
             cbUdpEnabled.Checked = config.UdpSettings.Enabled;
+            cbDbEnabled.Checked = config.DatabaseSettings.Enabled;
             // 2. Привязываем новый список тегов к источнику данных таблицы
             tagBindingSource.DataSource = config.Tags;
             // 3. ОБНОВЛЯЕМ ссылки внутри TagManager, чтобы он работал с НОВЫМ списком
@@ -403,43 +445,12 @@ namespace OPCWebServer
 
     static class Program
     {
-        private static readonly string LogFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "crash_log.txt");
-        [STAThread] static void Main()
+        [STAThread]
+        static void Main()
         {
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            Application.ThreadException += Application_ThreadException;
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-
             Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false); 
-            Application.Run(new MainForm()); 
-        }
-        private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
-        {
-            LogException("UI Thread Exception", e.Exception);
-        }
-
-        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            LogException("Unhandled Domain Exception", e.ExceptionObject as Exception);
-        }
-
-        private static void LogException(string title, Exception ex)
-        {
-            try
-            {
-                // Теперь LogFilePath гарантированно доступен здесь
-                string logMessage = $"=== {DateTime.Now:yyyy-MM-dd HH:mm:ss} | {title} ===\r\n" +
-                                    $"Message: {ex?.Message}\r\n" +
-                                    $"Stack Trace:\r\n{ex?.StackTrace}\r\n" +
-                                    $"{new string('-', 50)}\r\n\r\n";
-
-                File.AppendAllText(LogFilePath, logMessage);
-            }
-            catch
-            {
-                // Защита от зацикливания при ошибке записи файла
-            }
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new MainForm());
         }
     }
 }

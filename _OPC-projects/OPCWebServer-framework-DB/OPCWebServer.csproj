@@ -67,17 +67,20 @@
     <ApplicationIcon>freepik__minimalist_vector_app_icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LiteDB, Version=5.0.21.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
+      <HintPath>packages\LiteDB.5.0.21\lib\net45\LiteDB.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.6, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.10.0.6\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="OpcComRcw">
-      <HintPath>libs\OpcComRcw.dll</HintPath>
+      <HintPath>..\..\Desktop\opcdd\OpcComRcw.dll</HintPath>
     </Reference>
     <Reference Include="OpcNetApi">
-      <HintPath>libs\OpcNetApi.dll</HintPath>
+      <HintPath>..\..\Desktop\opcdd\OpcNetApi.dll</HintPath>
     </Reference>
     <Reference Include="OpcNetApi.Com">
-      <HintPath>libs\OpcNetApi.Com.dll</HintPath>
+      <HintPath>..\..\Desktop\opcdd\OpcNetApi.Com.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -119,6 +122,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigService.cs" />
+    <Compile Include="DatabaseService.cs" />
     <Compile Include="DataPollingService.cs" />
     <Compile Include="Models.cs" />
     <Compile Include="OpcService.cs" />
